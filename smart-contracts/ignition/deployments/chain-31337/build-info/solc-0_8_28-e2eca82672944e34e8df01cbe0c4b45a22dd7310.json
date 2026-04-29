@@ -3,6 +3,7 @@
   "id": "solc-0_8_28-e2eca82672944e34e8df01cbe0c4b45a22dd7310",
   "solcVersion": "0.8.28",
   "solcLongVersion": "0.8.28+commit.7893614a",
+  "compilerType": "solc",
   "userSourceNameMap": {
     "contracts/Reporting.sol": "project/contracts/Reporting.sol"
   },

@@ -1,0 +1,60 @@
+version: '3.8'
+
+services:
+  oracle-gov:
+    build: .
+    container_name: oracle-gov
+    command: python scripts/run_gov_oracle.py
+    environment:
+      ORACLE_RPC_URL: ${ORACLE_RPC_URL:-http://host.docker.internal:8545}
+      ORACLE_WS_URL: ${ORACLE_WS_URL:-}
+      ORACLE_CONTRACT_ADDRESS: ${ORACLE_CONTRACT_ADDRESS}
+      ORACLE_ABI_PATH: ${ORACLE_ABI_PATH:-/app/artifacts/Reporting.json}
+      ORACLE_GOV_PRIVATE_KEY: ${ORACLE_GOV_PRIVATE_KEY}
+      IPFS_API_URL: ${IPFS_API_URL:-/ip4/127.0.0.1/tcp/5001}
+      IPFS_GATEWAY: ${IPFS_GATEWAY:-https://ipfs.io/ipfs}
+    restart: unless-stopped
+    networks:
+      - local-governance
+    volumes:
+      - ${ABI_PATH:-./artifacts}:/app/artifacts:ro
+
+  oracle-ngo:
+    build: .
+    container_name: oracle-ngo
+    command: python scripts/run_ngo_oracle.py
+    environment:
+      ORACLE_RPC_URL: ${ORACLE_RPC_URL:-http://host.docker.internal:8545}
+      ORACLE_WS_URL: ${ORACLE_WS_URL:-}
+      ORACLE_CONTRACT_ADDRESS: ${ORACLE_CONTRACT_ADDRESS}
+      ORACLE_ABI_PATH: ${ORACLE_ABI_PATH:-/app/artifacts/Reporting.json}
+      ORACLE_NGO_PRIVATE_KEY: ${ORACLE_NGO_PRIVATE_KEY}
+      IPFS_API_URL: ${IPFS_API_URL:-/ip4/127.0.0.1/tcp/5001}
+      IPFS_GATEWAY: ${IPFS_GATEWAY:-https://ipfs.io/ipfs}
+    restart: unless-stopped
+    networks:
+      - local-governance
+    volumes:
+      - ${ABI_PATH:-./artifacts}:/app/artifacts:ro
+
+  oracle-intl:
+    build: .
+    container_name: oracle-intl
+    command: python scripts/run_intl_oracle.py
+    environment:
+      ORACLE_RPC_URL: ${ORACLE_RPC_URL:-http://host.docker.internal:8545}
+      ORACLE_WS_URL: ${ORACLE_WS_URL:-}
+      ORACLE_CONTRACT_ADDRESS: ${ORACLE_CONTRACT_ADDRESS}
+      ORACLE_ABI_PATH: ${ORACLE_ABI_PATH:-/app/artifacts/Reporting.json}
+      ORACLE_INTL_PRIVATE_KEY: ${ORACLE_INTL_PRIVATE_KEY}
+      IPFS_API_URL: ${IPFS_API_URL:-/ip4/127.0.0.1/tcp/5001}
+      IPFS_GATEWAY: ${IPFS_GATEWAY:-https://ipfs.io/ipfs}
+    restart: unless-stopped
+    networks:
+      - local-governance
+    volumes:
+      - ${ABI_PATH:-./artifacts}:/app/artifacts:ro
+
+networks:
+  local-governance:
+    driver: bridge
