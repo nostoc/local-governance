@@ -1,9 +1,0 @@
-fastapi
-uvicorn
-web3
-transformers
-torch
-nltk
-python-dotenv
-requests
-ipfshttpclient

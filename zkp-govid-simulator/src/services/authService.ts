@@ -1,55 +1,55 @@
-import crypto from 'crypto';
-import { verifyCitizen } from '../models/citizen';
-
-// Generate the Simulated Proof
-// This string tells the Relayer: "I mathematically verify this is a real citizen."
-const generateMockProof = (): string => {
-  return `zkp_valid_proof_${crypto.randomBytes(8).toString('hex')}`;
-};
-
-// Generate the Nullifier Hash
-// This must be deterministic based on the user and the specific report.
-// We hash the citizenId + the reportContext (e.g., "Pothole_MainSt") 
-// so if they try to submit the exact same report twice, the hash is the same, 
-// and the smart contract will reject it.
-const generateNullifierHash = (citizenId: string, reportContext: string): string => {
-  const hash = crypto.createHash('sha256');
-  hash.update(citizenId + reportContext);
-  return `0x${hash.digest('hex')}`;
-};
+import { ethers } from 'ethers';
+import { v4 as uuidv4 } from 'uuid';
+import { getGovWallet } from '../config/govAuthority';
+import { createIssuedTicket, getCitizenByGovId } from '../models/citizen';
 
 interface AuthResult {
   success: boolean;
   error?: string;
-  mockProof?: string;
-  nullifierHash?: string;
+  ticketId?: string;
+  signature?: string;
 }
 
-// Authenticate citizen and generate ZKP payload
-const authenticateAndGenerateProof = (
-  citizenId: string,
-  password: string,
-  reportContext: string
-): AuthResult => {
+const getTicketExpiry = (): string | null => {
+  const ttlSecondsRaw = process.env.TICKET_TTL_SECONDS;
+  if (!ttlSecondsRaw) {
+    return null;
+  }
+
+  const ttlSeconds = Number(ttlSecondsRaw);
+  if (!Number.isFinite(ttlSeconds) || ttlSeconds <= 0) {
+    return null;
+  }
+
+  return new Date(Date.now() + ttlSeconds * 1000).toISOString();
+};
+
+// Authenticate citizen and issue signed Ticket_ID
+const authenticateAndGenerateProof = async (
+  govId: string,
+  password: string
+): Promise<AuthResult> => {
+  const citizen = getCitizenByGovId(govId);
+
   // Verify real-world identity
-  if (!verifyCitizen(citizenId, password)) {
+  if (!citizen || citizen.password !== password || citizen.status !== 'Active') {
     return {
       success: false,
-      error: "Invalid citizen credentials"
+      error: 'Invalid citizen credentials'
     };
   }
 
-  // Generate the privacy payload
-  const mockProof = generateMockProof();
-  const nullifierHash = generateNullifierHash(citizenId, reportContext);
+  const rawUuid = uuidv4();
+  const ticketId = ethers.id(rawUuid);
+  const signature = await getGovWallet().signMessage(ethers.getBytes(ticketId));
 
-  // Return the Privacy Payload
-  // Notice we are NOT returning the citizen's name or ID. Privacy is preserved.
+  createIssuedTicket(ticketId, signature, citizen.id, getTicketExpiry());
+
   return {
     success: true,
-    mockProof: mockProof,
-    nullifierHash: nullifierHash
+    ticketId,
+    signature
   };
 };
 
-export { generateMockProof, generateNullifierHash, authenticateAndGenerateProof };
+export { authenticateAndGenerateProof };

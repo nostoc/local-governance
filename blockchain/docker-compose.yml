@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  node1:
+    image: ethereum/client-go:v1.13.15
+    container_name: local-gov-node1
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    entrypoint: ["/bin/sh", "-c"]
+    ports:
+      - "8545:8545"      
+      - "30303:30303"    
+      - "30303:30303/udp" 
+    volumes:
+      - ./node1:/root/node1
+      - ./genesis.json:/root/genesis.json
+      - node1_data:/root/node1/geth
+    command: 
+      - "if [ ! -d /root/node1/geth/chaindata ]; then echo 'Initializing Node 1...' && geth init --datadir /root/node1 /root/genesis.json; fi; exec geth --datadir=/root/node1 --networkid=1337 --http --http.addr=0.0.0.0 --http.port=8545 --http.corsdomain=* --http.vhosts=* --http.api=eth,net,web3,personal,miner,admin,clique --allow-insecure-unlock --mine --miner.etherbase=0x7E687086d737d5A06d13926505b7Fd5281aEdc23 --unlock=0x7E687086d737d5A06d13926505b7Fd5281aEdc23 --password=/root/node1/password.txt"
+
+  node2:
+    image: ethereum/client-go:v1.13.15
+    container_name: local-gov-node2
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    depends_on:
+      - node1
+    entrypoint: ["/bin/sh", "-c"]
+    ports:
+      - "30304:30304"
+      - "30304:30304/udp"
+    volumes:
+      - ./node2:/root/node2
+      - ./genesis.json:/root/genesis.json
+      - node2_data:/root/node2/geth
+    command: 
+      - "if [ ! -d /root/node2/geth/chaindata ]; then echo 'Initializing Node 2...' && geth init --datadir /root/node2 /root/genesis.json; fi; exec geth --datadir=/root/node2 --networkid=1337 --port=30304 --authrpc.port=8552 --mine --miner.etherbase=0x151e6113e425990Ea0fBe47f1EeE01Ada1a3798c --unlock=0x151e6113e425990Ea0fBe47f1EeE01Ada1a3798c --password=/root/node2/password.txt --bootnodes=enode://1ecf7b98e563689d79f2eca0b5ae67f7837a47845428d052a557a0bcbafab2c4f6c4b4cfd3e915d089bbdfafa41e6af076c38614d4cc68bc82b7e27615c23abf@node1:30303"
+
+  node3:
+    image: ethereum/client-go:v1.13.15
+    container_name: local-gov-node3
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "5"
+    depends_on:
+      - node1
+    entrypoint: ["/bin/sh", "-c"]
+    ports:
+      - "30305:30305"
+      - "30305:30305/udp"
+    volumes:
+      - ./node3:/root/node3
+      - ./genesis.json:/root/genesis.json
+      - node3_data:/root/node3/geth
+    command: 
+      - "if [ ! -d /root/node3/geth/chaindata ]; then echo 'Initializing Node 3...' && geth init --datadir /root/node3 /root/genesis.json; fi; exec geth --datadir=/root/node3 --networkid=1337 --port=30305 --authrpc.port=8553 --mine --miner.etherbase=0xAD0A0ed0e54954cF8CCe1e04991dAA6219e12105 --unlock=0xAD0A0ed0e54954cF8CCe1e04991dAA6219e12105 --password=/root/node3/password.txt --bootnodes=enode://1ecf7b98e563689d79f2eca0b5ae67f7837a47845428d052a557a0bcbafab2c4f6c4b4cfd3e915d089bbdfafa41e6af076c38614d4cc68bc82b7e27615c23abf@node1:30303"
+
+volumes:
+  node1_data:
+  node2_data:
+  node3_data:
+

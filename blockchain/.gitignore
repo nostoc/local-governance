@@ -1,0 +1,52 @@
+# Keep only lightweight chain config + wallet identity files
+!genesis.json
+
+# Node 1: keep password + keystore, ignore everything else
+node1/*
+!node1/password.txt
+!node1/keystore/
+!node1/keystore/**
+
+# Node 2: keep password + keystore, ignore everything else
+node2/*
+!node2/password.txt
+!node2/keystore/
+!node2/keystore/**
+
+# Node 3: keep password + keystore, ignore everything else
+node3/*
+!node3/password.txt
+!node3/keystore/
+!node3/keystore/**
+
+# Geth binary and installation files
+geth-linux-amd64-*/
+geth-darwin-amd64-*/
+geth-windows-amd64-*/
+
+# IDE and Editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+ENV/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.log
+*.pid
+myWork.txt

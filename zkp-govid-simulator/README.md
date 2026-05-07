@@ -7,7 +7,7 @@ A TypeScript-based server that simulates a government citizen authentication sys
 - **Privacy-Preserving Authentication**: Authenticates citizens without revealing their identity
 - **ZKP Simulation**: Generates simulated Zero-Knowledge Proofs
 - **Deterministic Nullifier Hash**: Prevents duplicate report submissions using unique hashes
-- **Mock Database**: Simulates a government citizen registry
+- **SQLite Database**: Persistent storage of 20+ citizen records with rich attributes
 - **TypeScript**: Fully typed for safety and maintainability
 - **Hot Reload**: Development with Nodemon for auto-restart on file changes
 - **Error Handling**: Comprehensive error handling with meaningful messages
@@ -20,18 +20,24 @@ zkp-govid-simulator/
 │   ├── app.ts                      # Express app setup & middleware
 │   ├── server.ts                   # Server initialization
 │   ├── models/
-│   │   └── citizen.ts             # Mock citizen database & queries
+│   │   └── citizen.ts              # Database queries (SQLite)
 │   ├── services/
-│   │   └── authService.ts         # Business logic for ZKP proof generation
+│   │   └── authService.ts          # Business logic for ZKP proof generation
 │   ├── controllers/
-│   │   └── authController.ts      # Request handlers & validation
+│   │   └── authController.ts       # Request handlers & validation
 │   ├── routes/
-│   │   └── auth.ts                # Route definitions
-│   └── middlewares/               # Custom middleware (expandable)
-├── dist/                          # Compiled JavaScript output
-├── package.json                   # Dependencies & scripts
-├── tsconfig.json                  # TypeScript configuration
-└── README.md                      # This file
+│   │   └── auth.ts                 # Route definitions
+│   ├── database/
+│   │   ├── db.ts                   # SQLite initialization & connection
+│   │   └── seed.ts                 # Seed 20 citizens into database
+│   └── middlewares/                # Custom middleware (expandable)
+├── data/
+│   └── citizens.db                 # SQLite database (auto-created)
+├── dist/                           # Compiled JavaScript output
+├── package.json                    # Dependencies & scripts
+├── tsconfig.json                   # TypeScript configuration
+├── SQLITE_SETUP_GUIDE.md           # DBeaver & database guide
+└── README.md                       # This file
 ```
 
 ##  Tech Stack
@@ -39,6 +45,7 @@ zkp-govid-simulator/
 - **Node.js** - Runtime environment
 - **Express.js** - Web framework
 - **TypeScript** - Type-safe JavaScript
+- **SQLite 3** (better-sqlite3) - Lightweight database
 - **Crypto** - Built-in Node.js cryptography
 - **CORS** - Cross-origin resource sharing
 - **Nodemon** - Development auto-reload
@@ -47,6 +54,169 @@ zkp-govid-simulator/
 ##  Quick Start
 
 ### Prerequisites
+- Node.js 18+ and npm
+- SQLite 3 (included with better-sqlite3)
+
+### Installation
+
+```bash
+npm install
+npm run build
+npm run dev
+```
+
+**Server starts at:** `http://localhost:5000`
+
+**Health check:** `http://localhost:5000/health`
+
+### First API Call
+
+```bash
+curl -X POST http://localhost:5000/api/govid/verify-citizen \
+  -H "Content-Type: application/json" \
+  -d '{
+    "govId": "199812345678",
+    "password": "0711234567",
+    "reportContext": "Pothole_MainSt"
+  }'
+```
+
+**Response:**
+```json
+{
+  "mockProof": "zkp_valid_proof_a1b2c3d4e5f6g7h8",
+  "nullifierHash": "0x7f3e9a2c1b5d6a8f..."
+}
+```
+
+##  Database Features
+
+- **20 Seeded Citizens** with realistic Sri Lankan names and mobile numbers
+- **Rich Attributes**: govId, password, name, email, phone, address, status
+- **Automatic Initialization**: Database created and seeded on first startup
+- **Fast Lookups**: Indexed by govId for quick citizen verification
+- **Easy Management**: View and edit data using DBeaver (see guide below)
+
+### All Citizens Available
+
+See [SQLITE_SETUP_GUIDE.md](SQLITE_SETUP_GUIDE.md#all-20-seeded-citizens) for complete list of all 20 test citizens you can use.
+
+##  API Endpoint
+
+### POST /api/govid/verify-citizen
+
+Authenticates a citizen and generates a ZKP proof.
+
+**Request Body:**
+```json
+{
+  "govId": "12-digit government ID",
+  "password": "citizen password (typically mobile)",
+  "reportContext": "context string for nullifier hash"
+}
+```
+
+**Success Response (200):**
+```json
+{
+  "mockProof": "zkp_valid_proof_...",
+  "nullifierHash": "0x..."
+}
+```
+
+**Error Response (400/401):**
+```json
+{
+  "error": "Invalid citizen credentials"
+}
+```
+
+##  Database Management
+
+### View Data with DBeaver
+
+**Free GUI tool to view/edit SQLite database:**
+
+1. Download DBeaver: https://dbeaver.io/download/
+2. Create SQLite connection pointing to `data/citizens.db`
+3. Browse, edit, and query 20 citizen records
+4. Export data to CSV or other formats
+
+See [SQLITE_SETUP_GUIDE.md](SQLITE_SETUP_GUIDE.md#viewing--managing-database-with-dbeaver) for detailed instructions.
+
+### Database File Location
+
+```
+zkp-govid-simulator/data/citizens.db
+```
+
+Automatically created on first run. Safe to delete (will be recreated).
+
+##  Environment Variables
+
+- `PORT` (default: 5000) – Server listening port
+- `DB_PATH` (default: `data/citizens.db`) – SQLite database location
+
+Example:
+```bash
+PORT=5001 DB_PATH=/custom/path/citizens.db npm run dev
+```
+
+##  Scripts
+
+```bash
+npm run dev       # Start with hot reload (Nodemon)
+npm run build     # Compile TypeScript → JavaScript
+npm start         # Run compiled build (production)
+npm test          # Run tests (not yet configured)
+```
+
+##  Testing
+
+Full list of 20 test citizens with govId and password pairs in [SQLITE_SETUP_GUIDE.md](SQLITE_SETUP_GUIDE.md#all-20-seeded-citizens).
+
+Example test users:
+- **Kamal Perera** – govId: `199812345678`, password: `0711234567`
+- **Nimali Silva** – govId: `199587654321`, password: `0779876543`
+
+All 20 citizens are seeded on first startup automatically.
+
+##  Architecture
+
+**Separation of Concerns:**
+- **Models** (`citizen.ts`): SQLite queries for citizen lookups
+- **Services** (`authService.ts`): ZKP proof and nullifier hash generation
+- **Controllers** (`authController.ts`): HTTP request handling and validation
+- **Routes** (`auth.ts`): Endpoint definitions
+
+##  Next Steps
+
+1. **Frontend Integration** – Call `/api/govid/verify-citizen` from web app
+2. **Real ZKP** – Replace simulated proofs with actual cryptographic proofs (SnarkJS)
+3. **Test Suite** – Add Jest tests for services and controllers
+4. **Rate Limiting** – Protect endpoints with rate limiting middleware
+5. **Logging** – Add structured logging with Winston/Pino
+
+##  Troubleshooting
+
+| Issue | Solution |
+|-------|----------|
+| Port 5000 in use | `PORT=5001 npm run dev` |
+| Database locked | Close DBeaver or other tools accessing the database |
+| TypeScript errors | Run `npm run build` to see detailed errors |
+| Citizens not found | Check database file exists: `ls data/citizens.db` |
+
+##  Resources
+
+- [SQLite Setup & Testing Guide](SQLITE_SETUP_GUIDE.md)
+- [Express.js Documentation](https://expressjs.com/)
+- [TypeScript Handbook](https://www.typescriptlang.org/docs/)
+- [better-sqlite3 Docs](https://github.com/WiseLibs/better-sqlite3)
+
+---
+
+**Last Updated:** April 2026  
+**Status:** Development with SQLite integration ✓
 
 - Node.js v16+ installed
 - npm or yarn package manager

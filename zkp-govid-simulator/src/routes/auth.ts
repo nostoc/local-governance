@@ -1,10 +1,14 @@
 import express, { Router } from 'express';
-import { authenticate } from '../controllers/authController';
+import { addCitizen, authenticate } from '../controllers/authController';
 
 const router: Router = express.Router();
 
-// POST /api/govid/authenticate
-// Authenticate citizen and generate ZKP proof
-router.post('/govid/authenticate', authenticate);
+// POST /api/govid/verify-citizen
+// Verify citizen identity and generate ZKP proof
+router.post('/govid/verify-citizen', authenticate);
+
+// POST /api/govid/add-citizen
+// Add a new citizen to the government registry
+router.post('/govid/add-citizen', addCitizen);
 
 export default router;

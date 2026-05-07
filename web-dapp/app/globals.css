@@ -1,26 +1,112 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
+  
+  --primary: #0284c7; /* sky-600 */
+  --primary-foreground: #ffffff;
+  
+  --secondary: #e0f2fe; /* sky-100 */
+  --secondary-foreground: #0369a1; /* sky-700 */
+  
+  --accent: #38bdf8; /* sky-400 */
+  --accent-foreground: #0f172a;
+  
+  --destructive: #ef4444; /* red-500 */
+  --destructive-foreground: #ffffff;
+
+  --success: #10b981; /* emerald-500 */
+  --success-foreground: #ffffff;
+
+  --warning: #f59e0b; /* amber-500 */
+  --warning-foreground: #ffffff;
+
+  --muted: #f1f5f9; /* slate-100 */
+  --muted-foreground: #64748b; /* slate-500 */
+
+  --card: #ffffff;
+  --card-foreground: #0f172a;
+
+  --border: #e2e8f0; /* slate-200 */
+  --input: #e2e8f0;
+  --ring: #0284c7; /* sky-600 */
+
+  --radius: 0.75rem;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --background: #020617; /* slate-950 */
+    --foreground: #f8fafc; /* slate-50 */
+    
+    --primary: #38bdf8; /* sky-400 */
+    --primary-foreground: #020617; /* slate-950 */
+    
+    --secondary: #0c4a6e; /* sky-900 */
+    --secondary-foreground: #e0f2fe; /* sky-100 */
+
+    --accent: #0ea5e9; /* sky-500 */
+    --accent-foreground: #f8fafc;
+    
+    --destructive: #f87171; /* red-400 */
+    --destructive-foreground: #020617;
+
+    --success: #34d399; /* emerald-400 */
+    --success-foreground: #020617;
+
+    --warning: #fbbf24; /* amber-400 */
+    --warning-foreground: #020617;
+
+    --muted: #0f172a; /* slate-900 */
+    --muted-foreground: #94a3b8; /* slate-400 */
+
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+
+    --border: #1e293b; /* slate-800 */
+    --input: #1e293b;
+    --ring: #38bdf8; /* sky-400 */
+  }
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-success: var(--success);
+  --color-success-foreground: var(--success-foreground);
+  --color-warning: var(--warning);
+  --color-warning-foreground: var(--warning-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --radius: var(--radius);
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: 'Inter', sans-serif;
+  @apply antialiased selection:bg-primary/20 selection:text-primary;
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-background/60 backdrop-blur-xl border border-border outline outline-1 outline-white/10 shadow-lg;
+  }
+  .glass-dark {
+    @apply bg-black/40 backdrop-blur-xl border border-white/10 outline outline-1 outline-white/5 shadow-2xl;
+  }
 }

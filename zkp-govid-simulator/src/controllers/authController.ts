@@ -1,27 +1,38 @@
 import { Request, Response } from 'express';
 import { authenticateAndGenerateProof } from '../services/authService';
+import { createCitizen, isUniqueConstraintError } from '../models/citizen';
 
 interface AuthRequest {
-  citizenId: string;
+  govId: string;
   password: string;
-  reportContext: string;
 }
 
-// POST /api/govid/authenticate
-// Authenticate citizen and return ZKP proof
-const authenticate = (req: Request<never, never, AuthRequest>, res: Response): void => {
-  const { citizenId, password, reportContext } = req.body;
+interface AddCitizenRequest {
+  adminSecret: string;
+  govId: string;
+  password: string;
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  status?: string;
+}
+
+// POST /api/govid/verify-citizen
+// Authenticate citizen and return signed Ticket_ID
+const authenticate = async (req: Request<never, never, AuthRequest>, res: Response): Promise<void> => {
+  const { govId, password } = req.body;
 
   // Validate input
-  if (!citizenId || !password || !reportContext) {
+  if (!govId || !password) {
     res.status(400).json({
-      error: "Missing required fields: citizenId, password, reportContext"
+      error: 'Missing required fields: govId, password'
     });
     return;
   }
 
-  // Authenticate and generate proof
-  const result = authenticateAndGenerateProof(citizenId, password, reportContext);
+  // Authenticate and issue signed ticket
+  const result = await authenticateAndGenerateProof(govId, password);
 
   if (!result.success) {
     res.status(401).json({ error: result.error });
@@ -29,9 +40,77 @@ const authenticate = (req: Request<never, never, AuthRequest>, res: Response): v
   }
 
   res.json({
-    mockProof: result.mockProof,
-    nullifierHash: result.nullifierHash
+    success: true,
+    ticketId: result.ticketId,
+    signature: result.signature
   });
 };
 
-export { authenticate };
+// POST /api/govid/add-citizen
+// Add a new citizen to the government registry
+const addCitizen = (req: Request<never, never, AddCitizenRequest>, res: Response): void => {
+  const expectedSecret = process.env.ADMIN_SECRET;
+
+  if (!expectedSecret) {
+    res.status(500).json({ error: 'Server configuration error: ADMIN_SECRET is not set' });
+    return;
+  }
+
+  const { adminSecret, govId, password, name, email, phone, address, status } = req.body;
+
+  if (!adminSecret || adminSecret !== expectedSecret) {
+    res.status(403).json({ error: 'Unauthorized. Invalid Admin Secret.' });
+    return;
+  }
+
+  if (!govId || !password || !name) {
+    res.status(400).json({ error: 'govId, password, and name are required.' });
+    return;
+  }
+
+  if (!/^\d{12}$/.test(govId)) {
+    res.status(400).json({ error: 'govId must be a 12-digit numeric string.' });
+    return;
+  }
+
+  if (!status || (status !== 'Active' && status !== 'Inactive')) {
+    if (status) {
+      res.status(400).json({ error: "status must be either 'Active' or 'Inactive'." });
+      return;
+    }
+  }
+
+  try {
+    const citizen = createCitizen({
+      govId,
+      password,
+      name,
+      email,
+      phone,
+      address,
+      status: status || 'Active'
+    });
+
+    console.log(`✅ New citizen added manually: ${citizen.name} (${citizen.govId})`);
+
+    res.status(201).json({
+      success: true,
+      message: `Citizen ${citizen.name} added successfully.`,
+      citizen: {
+        govId: citizen.govId,
+        name: citizen.name,
+        status: citizen.status
+      }
+    });
+  } catch (error) {
+    if (isUniqueConstraintError(error)) {
+      res.status(409).json({ error: 'A citizen with this GovID already exists.' });
+      return;
+    }
+
+    console.error('Error adding citizen:', error);
+    res.status(500).json({ error: 'Internal Server Error' });
+  }
+};
+
+export { addCitizen, authenticate };

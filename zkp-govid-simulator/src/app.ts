@@ -1,8 +1,14 @@
 import express, { Express, Request, Response } from 'express';
 import cors from 'cors';
 import authRoutes from './routes/auth';
+import { initializeDatabase } from './database/db';
+import { seedDatabase } from './database/seed';
 
 const app: Express = express();
+
+// Initialize database and seed data
+initializeDatabase();
+seedDatabase();
 
 // Middleware
 app.use(cors());
