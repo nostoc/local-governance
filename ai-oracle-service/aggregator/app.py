@@ -23,7 +23,8 @@ app = FastAPI(
     version="2.1.0",
 )
 cors_origins_raw = os.getenv(
-    "ALLOWED_CORS_ORIGINS"
+    "ALLOWED_CORS_ORIGINS",
+    "http://localhost:3001,https://relayer.internalbuildtools.online",
 )
 
 ALLOWED_CORS_ORIGINS = [
@@ -31,6 +32,20 @@ ALLOWED_CORS_ORIGINS = [
     for origin in cors_origins_raw.split(",")
     if origin.strip()
 ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=ALLOWED_CORS_ORIGINS,
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "x-api-key",
+        "x-relayer-signature",
+        "x-request-timestamp",
+        "x-request-nonce",
+    ],
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_CORS_ORIGINS,

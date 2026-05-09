@@ -59,6 +59,7 @@ services:
       MAX_REQUEST_AGE_SECONDS: ${MAX_REQUEST_AGE_SECONDS:-300}
       MAX_FILES: ${MAX_FILES:-3}
       MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-5}
+      ALLOWED_CORS_ORIGINS: ${ALLOWED_CORS_ORIGINS:-http://localhost:3001,https://relayer.internalbuildtools.online}
     volumes:
       - aggregator-data:/data
     depends_on:
