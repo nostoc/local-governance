@@ -111,7 +111,6 @@ def load_models():
         print(f"[Civic Oracle] CLIP loading failed. Keyword mode enabled. Error: {e}")
         clip_classifier = None
 
-
 @app.on_event("startup")
 def startup():
     load_models()
@@ -198,7 +197,7 @@ def analyze_text_relevance(text: str, selected_category: str) -> Dict[str, Any]:
     }
 
 
-def analyze_image_relevance(media: List[MediaItem], selected_category: str) -> Dict[str, Any]:
+def analyze_image_relevance(media: List[Dict[str, Any]], selected_category: str) -> Dict[str, Any]:
     if not media:
         return {
             "image_relevance": "NO_IMAGE_PROVIDED",
@@ -206,88 +205,28 @@ def analyze_image_relevance(media: List[MediaItem], selected_category: str) -> D
             "details": [],
         }
 
-    if clip_classifier is None:
-        return {
-            "image_relevance": "NOT_EVALUATED_TEXT_PRIMARY",
-            "confidence": 0.7,
-            "details": [
-                {
-                    "file_name": item.file_name,
-                    "mode": "clip_disabled",
-                    "note": "Image relevance not evaluated. Text relevance is primary.",
-                }
-                for item in media
-            ],
-        }
-
-    prompts = CATEGORY_PROMPTS.get(selected_category, [])
-    if not prompts:
-        prompts = ["a civic issue", "public infrastructure problem", "local governance issue"]
-
-    image_outputs = []
-    max_score = 0.0
-
-    for item in media:
-        image = decode_image(item)
-
-        if image is None:
-            image_outputs.append(
-                {
-                    "file_name": item.file_name,
-                    "relevant": False,
-                    "score": 0.0,
-                    "error": "Could not decode image",
-                }
-            )
-            continue
-
-        try:
-            outputs = clip_classifier(image, candidate_labels=prompts)
-            best = outputs[0] if outputs else {"label": "", "score": 0.0}
-            score = float(best["score"])
-            max_score = max(max_score, score)
-
-            image_outputs.append(
-                {
-                    "file_name": item.file_name,
-                    "best_label": best["label"],
-                    "score": score,
-                    "relevant": score >= 0.25,
-                }
-            )
-
-        except Exception as e:
-            image_outputs.append(
-                {
-                    "file_name": item.file_name,
-                    "relevant": True,
-                    "score": 0.0,
-                    "error": str(e),
-                    "note": "CLIP failed. Not rejecting based on image relevance.",
-                }
-            )
-
-    if any(item.get("relevant") is True for item in image_outputs):
-        return {
-            "image_relevance": "LIKELY_RELEVANT",
-            "confidence": round(max_score, 4),
-            "details": image_outputs,
-        }
-
     return {
-        "image_relevance": "LOW_IMAGE_RELEVANCE",
-        "confidence": round(1.0 - max_score, 4),
-        "details": image_outputs,
+        "image_relevance": "NOT_EVALUATED_TEXT_PRIMARY",
+        "confidence": 0.7,
+        "details": [
+            {
+                "file_name": item.get("file_name", "unknown"),
+                "mode": "clip_disabled",
+                "note": "Image relevance not evaluated. Text relevance is primary.",
+            }
+            for item in media
+        ],
     }
-
-
 @app.post("/analyze")
-def analyze(payload: OracleRequest):
-    text = payload.metadata.get("text", "")
-    category = payload.metadata.get("category", "Other")
+def analyze(payload: Dict[str, Any]):
+    metadata = payload.get("metadata", {})
+    media = payload.get("media", [])
+
+    text = metadata.get("text", "")
+    category = metadata.get("category", "Other")
 
     text_result = analyze_text_relevance(text, category)
-    image_result = analyze_image_relevance(payload.media, category)
+    image_result = analyze_image_relevance(media, category)
 
     if not text_result["civic_relevant"]:
         return {
@@ -296,25 +235,6 @@ def analyze(payload: OracleRequest):
             "confidence": text_result["confidence"],
             "explanation_code": text_result["explanation_code"],
             "model_name": "civic-keyword-relevance-v1",
-            "model_version": "1.0.0",
-            "critical_violation": False,
-            "details": {
-                "text_relevance": text_result,
-                "image_relevance": image_result,
-            },
-        }
-
-    if (
-        image_result["image_relevance"] == "LOW_IMAGE_RELEVANCE"
-        and len(payload.media) > 0
-        and text_result["confidence"] < 0.75
-    ):
-        return {
-            "oracle_id": "ORACLE_3_CIVIC_RELEVANCE",
-            "vote": "REJECT",
-            "confidence": 0.75,
-            "explanation_code": "LOW_IMAGE_AND_TEXT_RELEVANCE",
-            "model_name": "civic-keyword-image-relevance-v1",
             "model_version": "1.0.0",
             "critical_violation": False,
             "details": {
