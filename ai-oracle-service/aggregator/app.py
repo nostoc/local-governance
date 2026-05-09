@@ -51,19 +51,6 @@ app.add_middleware(
         "x-request-nonce",
     ],
 )
-app.add_middleware(
-    CORSMiddleware,
-    allow_origins=ALLOWED_CORS_ORIGINS,
-    allow_credentials=True,
-    allow_methods=["GET", "POST", "OPTIONS"],
-    allow_headers=[
-        "Content-Type",
-        "x-api-key",
-        "x-relayer-signature",
-        "x-request-timestamp",
-        "x-request-nonce",
-    ],
-)
 
 ORACLE_API_KEY = os.getenv("ORACLE_API_KEY", "change-this-secret")
 AGGREGATOR_PRIVATE_KEY = os.getenv("AGGREGATOR_PRIVATE_KEY")
@@ -502,17 +489,16 @@ async def moderate_report(
     )
 
     request_hash = hash_dict(signed_request_object)
-    
+
     log_debug_payload(
-    signed_request_object=signed_request_object,
-    request_hash=request_hash,
-    timestamp=x_request_timestamp,
-    nonce=x_request_nonce,
-    media_hashes=media_hashes,
-)
+        signed_request_object=signed_request_object,
+        request_hash=request_hash,
+        timestamp=x_request_timestamp,
+        nonce=x_request_nonce,
+        media_hashes=media_hashes,
+    )
 
-logger.info("Received relayer signature: %s", x_relayer_signature)
-
+    logger.info("Received relayer signature: %s", x_relayer_signature)
 
     recovered_relayer_address = verify_relayer_signature(
         request_hash=request_hash,
