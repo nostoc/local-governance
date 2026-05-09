@@ -1,4 +1,6 @@
 fastapi
 uvicorn
 pydantic
-vaderSentiment
+pillow
+transformers
+torch

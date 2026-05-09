@@ -1,32 +1,77 @@
 version: "3.9"
 
 services:
-  oracle-gov:
-    build: ./oracle-gov
+  oracle-safety:
+    build:
+      context: ./oracle-safety
+      dockerfile: Dockerfile
+    container_name: oracle-safety
     restart: unless-stopped
+    environment:
+      ENABLE_AI_MODELS: ${ENABLE_AI_MODELS:-true}
+      HF_HOME: /models
     expose:
       - "8001"
+    volumes:
+      - hf-model-cache:/models
+    networks:
+      - oracle-net
 
-  oracle-intl:
-    build: ./oracle-intl
+  oracle-spam:
+    build:
+      context: ./oracle-spam
+      dockerfile: Dockerfile
+    container_name: oracle-spam
     restart: unless-stopped
     expose:
       - "8002"
+    networks:
+      - oracle-net
 
-  oracle-ngo:
-    build: ./oracle-ngo
+  oracle-civic:
+    build:
+      context: ./oracle-civic
+      dockerfile: Dockerfile
+    container_name: oracle-civic
     restart: unless-stopped
+    environment:
+      ENABLE_CLIP_RELEVANCE: ${ENABLE_CLIP_RELEVANCE:-false}
+      HF_HOME: /models
     expose:
       - "8003"
+    volumes:
+      - hf-model-cache:/models
+    networks:
+      - oracle-net
 
   aggregator:
-    build: ./aggregator
+    build:
+      context: ./aggregator
+      dockerfile: Dockerfile
+    container_name: oracle-aggregator
     restart: unless-stopped
     ports:
       - "8000:8000"
-    env_file:
-      - .env
+    environment:
+      ORACLE_API_KEY: ${ORACLE_API_KEY}
+      AGGREGATOR_PRIVATE_KEY: ${AGGREGATOR_PRIVATE_KEY}
+      TRUSTED_RELAYER_ADDRESS: ${TRUSTED_RELAYER_ADDRESS}
+      MAX_REQUEST_AGE_SECONDS: ${MAX_REQUEST_AGE_SECONDS:-300}
+      MAX_FILES: ${MAX_FILES:-3}
+      MAX_FILE_SIZE_MB: ${MAX_FILE_SIZE_MB:-5}
+    volumes:
+      - aggregator-data:/data
     depends_on:
-      - oracle-gov
-      - oracle-intl
-      - oracle-ngo
+      - oracle-safety
+      - oracle-spam
+      - oracle-civic
+    networks:
+      - oracle-net
+
+networks:
+  oracle-net:
+    driver: bridge
+
+volumes:
+  hf-model-cache:
+  aggregator-data:
