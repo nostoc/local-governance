@@ -7,6 +7,7 @@ import time
 from datetime import datetime, timezone
 from typing import Any, Dict, List, Optional
 from fastapi.middleware.cors import CORSMiddleware
+import logging
 
 import requests
 from dotenv import load_dotenv
@@ -22,6 +23,10 @@ app = FastAPI(
     description="Secure AI moderation aggregator for civic report moderation.",
     version="2.1.0",
 )
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("ai-oracle-aggregator")
+
 cors_origins_raw = os.getenv(
     "ALLOWED_CORS_ORIGINS",
     "http://localhost:3001,https://relayer.internalbuildtools.online",
@@ -151,6 +156,22 @@ def recover_signer(message_hash: str, signature: str) -> str:
     message = encode_defunct(text=message_hash)
     return Account.recover_message(message, signature=signature).lower()
 
+def log_debug_payload(
+    signed_request_object: Dict[str, Any],
+    request_hash: str,
+    timestamp: str,
+    nonce: str,
+    media_hashes: List[str],
+) -> None:
+    logger.info("=== AI ORACLE SIGNATURE DEBUG START ===")
+    logger.info("Signed request object: %s", canonical_json(signed_request_object))
+    logger.info("Request hash: %s", request_hash)
+    logger.info("Timestamp header: %s", timestamp)
+    logger.info("Nonce header: %s", nonce)
+    logger.info("Media hashes: %s", media_hashes)
+    logger.info("Trusted relayer address: %s", TRUSTED_RELAYER_ADDRESS)
+    logger.info("=== AI ORACLE SIGNATURE DEBUG END ===")
+    
 
 def parse_timestamp(timestamp_str: str) -> datetime:
     try:
@@ -281,23 +302,51 @@ async def process_uploaded_files(files: Optional[List[UploadFile]]) -> List[Medi
 def verify_relayer_signature(request_hash: str, signature: str) -> str:
     """
     Verifies that the moderation request was signed by the trusted backend relayer.
-
-    The relayer address is NOT taken from a request header.
-    Instead, it is recovered from the signature and compared with
+    The relayer address is recovered from the signature and compared with
     TRUSTED_RELAYER_ADDRESS from the environment.
     """
 
     if not TRUSTED_RELAYER_ADDRESS:
+        logger.error("TRUSTED_RELAYER_ADDRESS is not configured")
         raise HTTPException(status_code=500, detail="Trusted relayer address not configured")
 
     try:
         recovered_address = recover_signer(request_hash, signature)
-    except Exception:
-        raise HTTPException(status_code=401, detail="Invalid relayer signature")
+    except Exception as e:
+        logger.error("Failed to recover relayer signer: %s", str(e))
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "Invalid relayer signature",
+                "debug": str(e),
+            },
+        )
 
-    if recovered_address != TRUSTED_RELAYER_ADDRESS:
-        raise HTTPException(status_code=401, detail="Request not signed by trusted relayer")
+    recovered_address = recovered_address.strip().lower()
+    trusted_address = TRUSTED_RELAYER_ADDRESS.strip().strip('"').strip("'").lower()
 
+    logger.info("Recovered relayer address: %s", recovered_address)
+    logger.info("Trusted relayer address: %s", trusted_address)
+
+    if recovered_address != trusted_address:
+        logger.warning(
+            "Relayer signature mismatch. recovered=%s trusted=%s request_hash=%s",
+            recovered_address,
+            trusted_address,
+            request_hash,
+        )
+
+        raise HTTPException(
+            status_code=401,
+            detail={
+                "error": "Request not signed by trusted relayer",
+                "recovered_address": recovered_address,
+                "trusted_relayer_address": trusted_address,
+                "request_hash": request_hash,
+            },
+        )
+
+    logger.info("Relayer signature verified successfully")
     return recovered_address
 
 
@@ -453,6 +502,17 @@ async def moderate_report(
     )
 
     request_hash = hash_dict(signed_request_object)
+    
+    log_debug_payload(
+    signed_request_object=signed_request_object,
+    request_hash=request_hash,
+    timestamp=x_request_timestamp,
+    nonce=x_request_nonce,
+    media_hashes=media_hashes,
+)
+
+logger.info("Received relayer signature: %s", x_relayer_signature)
+
 
     recovered_relayer_address = verify_relayer_signature(
         request_hash=request_hash,
@@ -485,6 +545,8 @@ async def moderate_report(
     for oracle_name, oracle_url in ORACLE_URLS.items():
         vote = call_oracle(oracle_name, oracle_url, oracle_payload)
         oracle_votes.append(vote)
+    
+    logger.info("Oracle votes: %s", json.dumps(oracle_votes, indent=2))
 
     aggregation = aggregate_votes(oracle_votes)
 
