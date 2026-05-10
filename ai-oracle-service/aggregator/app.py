@@ -507,6 +507,14 @@ async def moderate_report(
     
     aggregation = aggregate_votes(oracle_votes)
 
+    logger.info(
+        "Aggregation decision=%s confidence=%s risk=%s summary=%s",
+        aggregation["final_decision"],
+        aggregation["final_confidence"],
+        aggregation["risk_level"],
+        aggregation["summary_explanation"],
+    )
+
     decision_object = {
         "report_hash": report_hash,
         "request_hash": request_hash,

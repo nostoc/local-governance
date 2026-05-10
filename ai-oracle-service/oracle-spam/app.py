@@ -1,3 +1,4 @@
+import logging
 import re
 from typing import Any, Dict, List
 
@@ -5,6 +6,9 @@ from fastapi import FastAPI
 from pydantic import BaseModel
 
 app = FastAPI(title="Oracle 2 - Spam and Abuse Oracle")
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("oracle-spam")
 
 
 class MediaItem(BaseModel):
@@ -152,6 +156,14 @@ def analyze(payload: OracleRequest):
         vote = "REJECT"
     else:
         vote = "ACCEPT"
+
+    logger.info(
+        "Decision=%s confidence=%s reason=%s details=%s",
+        vote,
+        result["confidence"],
+        result["explanation_code"],
+        result["details"],
+    )
 
     return {
         "oracle_id": "ORACLE_2_SPAM_ABUSE",

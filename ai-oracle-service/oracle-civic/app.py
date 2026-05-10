@@ -1,5 +1,6 @@
 import base64
 import io
+import logging
 import os
 from typing import Any, Dict, List, Optional
 
@@ -8,6 +9,9 @@ from pydantic import BaseModel
 from PIL import Image
 
 app = FastAPI(title="Oracle 3 - Civic Relevance Oracle")
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("oracle-civic")
 
 ENABLE_CLIP_RELEVANCE = os.getenv("ENABLE_CLIP_RELEVANCE", "false").lower() == "true"
 
@@ -229,6 +233,12 @@ def analyze(payload: Dict[str, Any]):
     image_result = analyze_image_relevance(media, category)
 
     if not text_result["civic_relevant"]:
+        logger.info(
+            "Decision=REJECT confidence=%s reason=%s details=%s",
+            text_result["confidence"],
+            text_result["explanation_code"],
+            {"text_relevance": text_result, "image_relevance": image_result},
+        )
         return {
             "oracle_id": "ORACLE_3_CIVIC_RELEVANCE",
             "vote": "REJECT",
@@ -242,6 +252,13 @@ def analyze(payload: Dict[str, Any]):
                 "image_relevance": image_result,
             },
         }
+
+    logger.info(
+        "Decision=ACCEPT confidence=%s reason=%s details=%s",
+        text_result["confidence"],
+        text_result["explanation_code"],
+        {"text_relevance": text_result, "image_relevance": image_result},
+    )
 
     return {
         "oracle_id": "ORACLE_3_CIVIC_RELEVANCE",

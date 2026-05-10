@@ -1,5 +1,6 @@
 import base64
 import io
+import logging
 import os
 from typing import Any, Dict, List, Optional
 
@@ -8,6 +9,9 @@ from pydantic import BaseModel
 from PIL import Image
 
 app = FastAPI(title="Oracle 1 - Safety Oracle")
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("oracle-safety")
 
 ENABLE_AI_MODELS = os.getenv("ENABLE_AI_MODELS", "true").lower() == "true"
 
@@ -309,6 +313,15 @@ def analyze(payload: OracleRequest):
         explanation = "TEXT_AND_IMAGES_SAFE"
         confidence = min(text_result["confidence"], image_result["confidence"])
         critical = False
+
+    logger.info(
+        "Decision=%s confidence=%s reason=%s critical=%s details=%s",
+        vote,
+        round(float(confidence), 4),
+        explanation,
+        critical,
+        {"text_result": text_result, "image_result": image_result},
+    )
 
     return {
         "oracle_id": "ORACLE_1_SAFETY",
