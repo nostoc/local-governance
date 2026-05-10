@@ -8,9 +8,10 @@ import * as ReportingArtifact from './Reporting.json';
 @Injectable()
 export class BlockchainService implements OnModuleInit {
   private readonly logger = new Logger(BlockchainService.name);
-  private provider: ethers.JsonRpcProvider;
-  private relayerWallet: ethers.Wallet;
-  private reportingContract: ethers.Contract;
+  private provider!: ethers.JsonRpcProvider;
+  private relayerWallet!: ethers.Wallet;
+  private reportingContract!: ethers.Contract;
+  private blockchainEnabled = false;
 
   constructor(private configService: ConfigService) {}
 
@@ -19,6 +20,19 @@ export class BlockchainService implements OnModuleInit {
   }
 
   private initializeWeb3() {
+    const blockchainEnabled =
+      (this.configService.get<string>('BLOCKCHAIN_SUBMISSION_ENABLED') ?? 'false').toLowerCase() === 'true';
+
+    if (!blockchainEnabled) {
+      this.blockchainEnabled = false;
+      this.logger.warn(
+        'Blockchain submission is disabled (BLOCKCHAIN_SUBMISSION_ENABLED is not true). Skipping Web3 initialization.',
+      );
+      return;
+    }
+
+    this.blockchainEnabled = true;
+
     // These values are pulled from your .env file
     const rpcUrl = this.configService.get<string>('RPC_URL'); 
     const privateKey = this.configService.get<string>('RELAYER_PRIVATE_KEY');
@@ -45,7 +59,8 @@ export class BlockchainService implements OnModuleInit {
 
       this.logger.log(`Blockchain connected. Relayer Address: ${this.relayerWallet.address}`);
     } catch (error) {
-      this.logger.error(`Failed to initialize Web3: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Failed to initialize Web3: ${message}`);
     }
   }
 
@@ -55,6 +70,16 @@ export class BlockchainService implements OnModuleInit {
    * and the AI Oracle approves the IPFS content.
    */
   async submitReportToChain(ipfsCID: string, submissionNullifier: string) {
+    if (!this.blockchainEnabled) {
+      this.logger.warn('submitReportToChain called while blockchain submission is disabled.');
+      return {
+        success: true,
+        submissionStatus: 'skipped_blockchain_disabled',
+        ipfsCID,
+        submissionNullifier,
+      };
+    }
+
     try {
       this.logger.log(`Initiating blockchain transaction for nullifier: ${submissionNullifier}`);
       
@@ -74,7 +99,8 @@ export class BlockchainService implements OnModuleInit {
         blockNumber: receipt.blockNumber 
       };
     } catch (error) {
-      this.logger.error(`Blockchain submission failed: ${error.message}`);
+      const message = error instanceof Error ? error.message : String(error);
+      this.logger.error(`Blockchain submission failed: ${message}`);
       throw new InternalServerErrorException('Failed to record report on-chain.');
     }
   }

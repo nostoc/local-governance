@@ -322,7 +322,7 @@ def verify_relayer_signature(request_hash: str, signature: str) -> str:
 
 def call_oracle(oracle_name: str, oracle_url: str, payload: Dict[str, Any]) -> Dict[str, Any]:
     try:
-        response = requests.post(oracle_url, json=payload, timeout=60)
+        response = requests.post(oracle_url, json=payload, timeout=120)
 
         if response.status_code >= 400:
             return {
