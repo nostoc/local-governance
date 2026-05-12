@@ -1,0 +1,181 @@
+{
+  "test_id": "AI-S08",
+  "name": "Valid civic text with safe garbage image",
+  "expected_http_status": 200,
+  "expected_decision": "ACCEPT",
+  "actual_http_status": 200,
+  "actual_decision": "ACCEPT",
+  "passed": true,
+  "elapsed_ms_client": 3476.82,
+  "processing_time_ms_server": 441.86,
+  "request_hash_local": "a92be136dbfc7d654a588a1ec424833d881036ea82dd4a4cfc36325eed343faf",
+  "relayer_address": "0x8B3d8A21B794544759EA04B15F2bAc1e61877A11",
+  "metadata": {
+    "report_id": "RPT-AI-S08-75266932-ae56-4a5b-aa65-6368128987c0",
+    "text": "Garbage has been dumped near the public road and it is causing a bad smell.",
+    "category": "Waste Management",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "citizen_signature": "0xmockcitizensignature",
+    "government_ticket_signature": "0xmockgovernmentsignature"
+  },
+  "signed_object": {
+    "report_id": "RPT-AI-S08-75266932-ae56-4a5b-aa65-6368128987c0",
+    "text_hash": "88f03d4890dff9d5694291f7410fc38297c15458d84d2e1941f9efc3c6303989",
+    "media_hashes": [
+      "919bffbfe8667da6224213e6d1ec911f0647f12f98cbc271c1360fe7ed2df3e3"
+    ],
+    "category": "Waste Management",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "timestamp": "2026-05-10T11:05:17.013628+00:00",
+    "nonce": "5cfca60b-5b53-4201-82d7-76c863bfbf89"
+  },
+  "file_summaries": [
+    {
+      "file_name": "garbage_street.png",
+      "mime_type": "image/png",
+      "size_bytes": 182608,
+      "sha256": "919bffbfe8667da6224213e6d1ec911f0647f12f98cbc271c1360fe7ed2df3e3"
+    }
+  ],
+  "response": {
+    "final_decision": "ACCEPT",
+    "final_confidence": 0.8318,
+    "risk_level": "LOW",
+    "report_hash": "1ed9d67e59be080100d8ae26b31da604fa4209ffdee0ca84dfdd0f28a15122b1",
+    "request_hash": "a92be136dbfc7d654a588a1ec424833d881036ea82dd4a4cfc36325eed343faf",
+    "decision_hash": "b65a2011033401382c2b793b90724ad445c2b6357a769ab7244ac1c3b2dc20d9",
+    "aggregator_signature": "ebf20b06dfcf9c9d72dee167ad999ea20637b279981bc2d17abd59b483a317d632abf99a3c2cfbce53d2d0df152f265e4c1a2f3147fef6aac9a9b6fb894edac71b",
+    "summary_explanation": "Report accepted. Text and media passed moderation checks.",
+    "oracle_votes": [
+      {
+        "oracle_id": "ORACLE_1_SAFETY",
+        "vote": "ACCEPT",
+        "confidence": 0.6454,
+        "explanation_code": "TEXT_AND_IMAGES_SAFE",
+        "model_name": "unitary/toxic-bert + Falconsai/nsfw_image_detection",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "text_result": {
+            "safe": true,
+            "confidence": 0.6454,
+            "critical_violation": false,
+            "explanation_code": "TEXT_SAFE",
+            "details": {
+              "scores": {
+                "toxic": 0.35459089279174805,
+                "insult": 0.008598011918365955,
+                "obscene": 0.0059726950712502,
+                "identity_hate": 0.0032717615831643343,
+                "threat": 0.0005223151529207826,
+                "severe_toxic": 0.00044192266068421304
+              },
+              "mode": "unitary/toxic-bert"
+            }
+          },
+          "image_result": {
+            "safe": true,
+            "confidence": 0.9999,
+            "critical_violation": false,
+            "explanation_code": "IMAGES_SAFE",
+            "details": {
+              "images": [
+                {
+                  "file_name": "garbage_street.png",
+                  "labels": {
+                    "normal": 0.9998524188995361,
+                    "nsfw": 0.0001476139441365376
+                  },
+                  "nsfw_score": 0.0001476139441365376,
+                  "safe": true,
+                  "mode": "Falconsai/nsfw_image_detection"
+                }
+              ]
+            }
+          }
+        }
+      },
+      {
+        "oracle_id": "ORACLE_2_SPAM_ABUSE",
+        "vote": "ACCEPT",
+        "confidence": 1.0,
+        "explanation_code": "NO_SPAM_DETECTED",
+        "model_name": "spam-abuse-rules-v1",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "word_count": 15,
+          "url_count": 0,
+          "matched_spam_phrases": [],
+          "matched_promotional_words": [],
+          "repeated_character_pattern": false,
+          "excessive_symbols": false,
+          "reasons": [],
+          "spam_score": 0.0
+        }
+      },
+      {
+        "oracle_id": "ORACLE_3_CIVIC_RELEVANCE",
+        "vote": "ACCEPT",
+        "confidence": 0.85,
+        "explanation_code": "CATEGORY_AND_CIVIC_RELEVANCE_MATCH",
+        "model_name": "civic-keyword-image-relevance-v1",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "text_relevance": {
+            "civic_relevant": true,
+            "confidence": 0.85,
+            "explanation_code": "CATEGORY_AND_CIVIC_RELEVANCE_MATCH",
+            "details": {
+              "selected_category": "Waste Management",
+              "category_matches": {
+                "Road Damage": [
+                  "road"
+                ],
+                "Waste Management": [
+                  "garbage",
+                  "dump"
+                ],
+                "Public Property Damage": [
+                  "public"
+                ],
+                "Other": [
+                  "public"
+                ]
+              },
+              "all_matches": [
+                "dump",
+                "road",
+                "garbage",
+                "public"
+              ]
+            }
+          },
+          "image_relevance": {
+            "image_relevance": "NOT_EVALUATED_TEXT_PRIMARY",
+            "confidence": 0.7,
+            "details": [
+              {
+                "file_name": "garbage_street.png",
+                "mode": "clip_disabled",
+                "note": "Image relevance not evaluated. Text relevance is primary."
+              }
+            ]
+          }
+        }
+      }
+    ],
+    "security": {
+      "relayer_signature_verified": true,
+      "recovered_relayer_address": "0x8b3d8a21b794544759ea04b15f2bac1e61877a11",
+      "timestamp_validated": true,
+      "nonce_accepted": true
+    },
+    "processing_time_ms": 441.86
+  }
+}

@@ -1,0 +1,38 @@
+{
+  "test_id": "AI-S06",
+  "name": "Empty report text",
+  "expected_http_status": 400,
+  "expected_decision": null,
+  "actual_http_status": 400,
+  "actual_decision": null,
+  "passed": true,
+  "elapsed_ms_client": 670.12,
+  "processing_time_ms_server": null,
+  "request_hash_local": "980d81f982768e9710b1dea6618803c6ecdca5ed110c90384b9c6da6dc7e04e4",
+  "relayer_address": "0x8B3d8A21B794544759EA04B15F2bAc1e61877A11",
+  "metadata": {
+    "report_id": "RPT-AI-S06-9c508ca9-86f4-4565-b925-ee3697170a66",
+    "text": "",
+    "category": "Road Damage",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "citizen_signature": "0xmockcitizensignature",
+    "government_ticket_signature": "0xmockgovernmentsignature"
+  },
+  "signed_object": {
+    "report_id": "RPT-AI-S06-9c508ca9-86f4-4565-b925-ee3697170a66",
+    "text_hash": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "media_hashes": [],
+    "category": "Road Damage",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "timestamp": "2026-05-10T11:05:11.768694+00:00",
+    "nonce": "1688d4e2-e79c-4fd7-b16c-ee0a086c674e"
+  },
+  "file_summaries": [],
+  "response": {
+    "detail": "Missing metadata fields: ['text']"
+  }
+}

@@ -69,7 +69,7 @@ export class BlockchainService implements OnModuleInit {
    * This is called AFTER the Express ZKP server issues the nullifier 
    * and the AI Oracle approves the IPFS content.
    */
-  async submitReportToChain(ipfsCID: string, submissionNullifier: string) {
+  async submitReportToChain(ipfsCID: string, reportHash: string, submissionNullifier: string, citizenPseudonym: string) {
     if (!this.blockchainEnabled) {
       this.logger.warn('submitReportToChain called while blockchain submission is disabled.');
       return {
@@ -77,14 +77,24 @@ export class BlockchainService implements OnModuleInit {
         submissionStatus: 'skipped_blockchain_disabled',
         ipfsCID,
         submissionNullifier,
+        citizenPseudonym
       };
     }
 
     try {
+
+          // Convert hex strings to bytes32
+    const reportHashBytes   = ethers.hexlify(ethers.getBytes(reportHash)) as `0x${string}`;
+    const nullifierBytes = ethers.hexlify(ethers.getBytes(submissionNullifier)) as `0x${string}`;
+
       this.logger.log(`Initiating blockchain transaction for nullifier: ${submissionNullifier}`);
       
-      // Call the createReport function on the Solidity contract
-      const tx = await this.reportingContract.createReport(ipfsCID, submissionNullifier);
+    const tx = await this.reportingContract.submitReport(   // ← was createReport
+      ipfsCID,
+      reportHashBytes,      // bytes32 reportHash
+      nullifierBytes,       // bytes32 submissionNullifier
+      citizenPseudonym      // bytes32 citizenPseudonym
+    );
       
       this.logger.log(`Tx broadcasted: ${tx.hash}. Waiting for Geth network to mine...`);
       

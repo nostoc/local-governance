@@ -23,8 +23,17 @@ services:
       dockerfile: Dockerfile
     container_name: oracle-spam
     restart: unless-stopped
+    environment:
+      ENABLE_SPAM_AI_MODEL: ${ENABLE_SPAM_AI_MODEL:-true}
+      AI_STRONG_SPAM_THRESHOLD: ${AI_STRONG_SPAM_THRESHOLD:-0.85}
+      AI_SUPPORTING_SPAM_THRESHOLD: ${AI_SUPPORTING_SPAM_THRESHOLD:-0.65}
+      RULE_REJECT_THRESHOLD: ${RULE_REJECT_THRESHOLD:-0.60}
+      RULE_SUPPORT_THRESHOLD: ${RULE_SUPPORT_THRESHOLD:-0.25}
+      HF_HOME: /models
     expose:
       - "8002"
+    volumes:
+      - hf-model-cache:/models
     networks:
       - oracle-net
 
@@ -35,6 +44,10 @@ services:
     container_name: oracle-civic
     restart: unless-stopped
     environment:
+      ENABLE_SEMANTIC_TEXT_RELEVANCE: ${ENABLE_SEMANTIC_TEXT_RELEVANCE:-true}
+      SEMANTIC_MODEL_NAME: ${SEMANTIC_MODEL_NAME:-sentence-transformers/all-MiniLM-L6-v2}
+      TEXT_RELEVANCE_THRESHOLD: ${TEXT_RELEVANCE_THRESHOLD:-0.38}
+      CATEGORY_MATCH_THRESHOLD: ${CATEGORY_MATCH_THRESHOLD:-0.40}
       ENABLE_CLIP_RELEVANCE: ${ENABLE_CLIP_RELEVANCE:-false}
       HF_HOME: /models
     expose:

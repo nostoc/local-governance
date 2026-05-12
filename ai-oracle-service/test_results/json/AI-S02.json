@@ -1,0 +1,149 @@
+{
+  "test_id": "AI-S02",
+  "name": "Valid civic text report - waste management",
+  "expected_http_status": 200,
+  "expected_decision": "ACCEPT",
+  "actual_http_status": 200,
+  "actual_decision": "ACCEPT",
+  "passed": true,
+  "elapsed_ms_client": 1557.58,
+  "processing_time_ms_server": 130.0,
+  "request_hash_local": "41bf86bf83ac3292816a0e6276c119d9a11d4112b4989164c94b9dc3ed5bfa56",
+  "relayer_address": "0x8B3d8A21B794544759EA04B15F2bAc1e61877A11",
+  "metadata": {
+    "report_id": "RPT-AI-S02-aa018e3c-e694-446b-9c8f-691324f2320b",
+    "text": "Garbage has not been collected near the public market for three days.",
+    "category": "Waste Management",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "citizen_signature": "0xmockcitizensignature",
+    "government_ticket_signature": "0xmockgovernmentsignature"
+  },
+  "signed_object": {
+    "report_id": "RPT-AI-S02-aa018e3c-e694-446b-9c8f-691324f2320b",
+    "text_hash": "c486365976e06f327c83feccb32d75874ab91e8e99fba5a4f757b14f279a845c",
+    "media_hashes": [],
+    "category": "Waste Management",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "timestamp": "2026-05-10T11:05:05.308325+00:00",
+    "nonce": "5e05b2d4-7de6-4501-b74b-16e83309a845"
+  },
+  "file_summaries": [],
+  "response": {
+    "final_decision": "ACCEPT",
+    "final_confidence": 0.9173,
+    "risk_level": "LOW",
+    "report_hash": "b36130a56feaef3f2773699f80646e729cdcbaf7123cb0a7ab7151f74850944d",
+    "request_hash": "41bf86bf83ac3292816a0e6276c119d9a11d4112b4989164c94b9dc3ed5bfa56",
+    "decision_hash": "062af3fdebe6c71ac40275fc862ae96eef46ffcdb7bc5287734fde72e20d9d6b",
+    "aggregator_signature": "2492f6fe719429ab9bfac3307ff5fe3c83f2c8b7ebab4a207abaac01a8fa9f7b57de7ec793dfb49f6f4963a4b01e8e86f8b5d16ac456bba48a5b1e78fdc908711c",
+    "summary_explanation": "Report accepted. Text and media passed moderation checks.",
+    "oracle_votes": [
+      {
+        "oracle_id": "ORACLE_1_SAFETY",
+        "vote": "ACCEPT",
+        "confidence": 0.9019,
+        "explanation_code": "TEXT_AND_IMAGES_SAFE",
+        "model_name": "unitary/toxic-bert + Falconsai/nsfw_image_detection",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "text_result": {
+            "safe": true,
+            "confidence": 0.9019,
+            "critical_violation": false,
+            "explanation_code": "TEXT_SAFE",
+            "details": {
+              "scores": {
+                "toxic": 0.09810912609100342,
+                "obscene": 0.0021972928661853075,
+                "insult": 0.0020815241150557995,
+                "identity_hate": 0.0010023299837484956,
+                "threat": 0.0002821443194989115,
+                "severe_toxic": 0.00020341164781711996
+              },
+              "mode": "unitary/toxic-bert"
+            }
+          },
+          "image_result": {
+            "safe": true,
+            "confidence": 1.0,
+            "critical_violation": false,
+            "explanation_code": "NO_IMAGE_PROVIDED",
+            "details": {
+              "images": []
+            }
+          }
+        }
+      },
+      {
+        "oracle_id": "ORACLE_2_SPAM_ABUSE",
+        "vote": "ACCEPT",
+        "confidence": 1.0,
+        "explanation_code": "NO_SPAM_DETECTED",
+        "model_name": "spam-abuse-rules-v1",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "word_count": 12,
+          "url_count": 0,
+          "matched_spam_phrases": [],
+          "matched_promotional_words": [],
+          "repeated_character_pattern": false,
+          "excessive_symbols": false,
+          "reasons": [],
+          "spam_score": 0.0
+        }
+      },
+      {
+        "oracle_id": "ORACLE_3_CIVIC_RELEVANCE",
+        "vote": "ACCEPT",
+        "confidence": 0.85,
+        "explanation_code": "CATEGORY_AND_CIVIC_RELEVANCE_MATCH",
+        "model_name": "civic-keyword-image-relevance-v1",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "text_relevance": {
+            "civic_relevant": true,
+            "confidence": 0.85,
+            "explanation_code": "CATEGORY_AND_CIVIC_RELEVANCE_MATCH",
+            "details": {
+              "selected_category": "Waste Management",
+              "category_matches": {
+                "Waste Management": [
+                  "garbage"
+                ],
+                "Public Property Damage": [
+                  "public"
+                ],
+                "Other": [
+                  "public"
+                ]
+              },
+              "all_matches": [
+                "garbage",
+                "public"
+              ]
+            }
+          },
+          "image_relevance": {
+            "image_relevance": "NO_IMAGE_PROVIDED",
+            "confidence": 1.0,
+            "details": []
+          }
+        }
+      }
+    ],
+    "security": {
+      "relayer_signature_verified": true,
+      "recovered_relayer_address": "0x8b3d8a21b794544759ea04b15f2bac1e61877a11",
+      "timestamp_validated": true,
+      "nonce_accepted": true
+    },
+    "processing_time_ms": 130.0
+  }
+}

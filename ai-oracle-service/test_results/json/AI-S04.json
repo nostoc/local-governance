@@ -1,0 +1,144 @@
+{
+  "test_id": "AI-S04",
+  "name": "Threatening text",
+  "expected_http_status": 200,
+  "expected_decision": "REJECT",
+  "actual_http_status": 200,
+  "actual_decision": "ACCEPT",
+  "passed": false,
+  "elapsed_ms_client": 1626.56,
+  "processing_time_ms_server": 137.08,
+  "request_hash_local": "046f76045043831d959bad979202b2f151b537449e92bd4e659c264b0dbe5419",
+  "relayer_address": "0x8B3d8A21B794544759EA04B15F2bAc1e61877A11",
+  "metadata": {
+    "report_id": "RPT-AI-S04-f2fe58c2-7dda-4156-b2d1-e9bda170c99a",
+    "text": "There is a pothole near the school and I will attack the officer if this is not fixed.",
+    "category": "Road Damage",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "citizen_signature": "0xmockcitizensignature",
+    "government_ticket_signature": "0xmockgovernmentsignature"
+  },
+  "signed_object": {
+    "report_id": "RPT-AI-S04-f2fe58c2-7dda-4156-b2d1-e9bda170c99a",
+    "text_hash": "81c202ebc2377c850c9a9735cc787830e288f3868a0d9ef33bf6806fb92bd256",
+    "media_hashes": [],
+    "category": "Road Damage",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "timestamp": "2026-05-10T11:05:08.466451+00:00",
+    "nonce": "758f160c-178e-403c-9a96-e394ae1c6ff4"
+  },
+  "file_summaries": [],
+  "response": {
+    "final_decision": "ACCEPT",
+    "final_confidence": 0.9174,
+    "risk_level": "LOW",
+    "report_hash": "770caf558130ea8ed10425b0f953de9a0db4e83cd394475f162c5e847750ac8f",
+    "request_hash": "046f76045043831d959bad979202b2f151b537449e92bd4e659c264b0dbe5419",
+    "decision_hash": "5af9e7ceb3f1ceb6dcc0eab91161fe99b53e4a0d052f80934b095a75ba8d1325",
+    "aggregator_signature": "396f6b12ce04cb7ca65502abbd6b4bc2a81270db50aa33e5ecdcbf4bf92a25365f6245e29020e57c6b0acf5d1e62e89d1bbfc357053a02653ca4abebac833f6d1c",
+    "summary_explanation": "Report accepted. Text and media passed moderation checks.",
+    "oracle_votes": [
+      {
+        "oracle_id": "ORACLE_1_SAFETY",
+        "vote": "ACCEPT",
+        "confidence": 0.9023,
+        "explanation_code": "TEXT_AND_IMAGES_SAFE",
+        "model_name": "unitary/toxic-bert + Falconsai/nsfw_image_detection",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "text_result": {
+            "safe": true,
+            "confidence": 0.9023,
+            "critical_violation": false,
+            "explanation_code": "TEXT_SAFE",
+            "details": {
+              "scores": {
+                "toxic": 0.09774226695299149,
+                "threat": 0.013688189908862114,
+                "identity_hate": 0.0027686525136232376,
+                "insult": 0.0019554276950657368,
+                "obscene": 0.0015072175301611423,
+                "severe_toxic": 0.0007306338520720601
+              },
+              "mode": "unitary/toxic-bert"
+            }
+          },
+          "image_result": {
+            "safe": true,
+            "confidence": 1.0,
+            "critical_violation": false,
+            "explanation_code": "NO_IMAGE_PROVIDED",
+            "details": {
+              "images": []
+            }
+          }
+        }
+      },
+      {
+        "oracle_id": "ORACLE_2_SPAM_ABUSE",
+        "vote": "ACCEPT",
+        "confidence": 1.0,
+        "explanation_code": "NO_SPAM_DETECTED",
+        "model_name": "spam-abuse-rules-v1",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "word_count": 18,
+          "url_count": 0,
+          "matched_spam_phrases": [],
+          "matched_promotional_words": [],
+          "repeated_character_pattern": false,
+          "excessive_symbols": false,
+          "reasons": [],
+          "spam_score": 0.0
+        }
+      },
+      {
+        "oracle_id": "ORACLE_3_CIVIC_RELEVANCE",
+        "vote": "ACCEPT",
+        "confidence": 0.85,
+        "explanation_code": "CATEGORY_AND_CIVIC_RELEVANCE_MATCH",
+        "model_name": "civic-keyword-image-relevance-v1",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "text_relevance": {
+            "civic_relevant": true,
+            "confidence": 0.85,
+            "explanation_code": "CATEGORY_AND_CIVIC_RELEVANCE_MATCH",
+            "details": {
+              "selected_category": "Road Damage",
+              "category_matches": {
+                "Road Damage": [
+                  "pothole",
+                  "hole"
+                ]
+              },
+              "all_matches": [
+                "pothole",
+                "hole"
+              ]
+            }
+          },
+          "image_relevance": {
+            "image_relevance": "NO_IMAGE_PROVIDED",
+            "confidence": 1.0,
+            "details": []
+          }
+        }
+      }
+    ],
+    "security": {
+      "relayer_signature_verified": true,
+      "recovered_relayer_address": "0x8b3d8a21b794544759ea04b15f2bac1e61877a11",
+      "timestamp_validated": true,
+      "nonce_accepted": true
+    },
+    "processing_time_ms": 137.08
+  }
+}

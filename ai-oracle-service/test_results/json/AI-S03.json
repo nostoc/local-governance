@@ -1,0 +1,147 @@
+{
+  "test_id": "AI-S03",
+  "name": "Spam promotional text",
+  "expected_http_status": 200,
+  "expected_decision": "REJECT",
+  "actual_http_status": 200,
+  "actual_decision": "REJECT",
+  "passed": true,
+  "elapsed_ms_client": 1582.32,
+  "processing_time_ms_server": 131.31,
+  "request_hash_local": "5564a352bdd33d39d8a9e6d13bc0919f8a843c99fd54572a8d6dfd370e183a72",
+  "relayer_address": "0x8B3d8A21B794544759EA04B15F2bAc1e61877A11",
+  "metadata": {
+    "report_id": "RPT-AI-S03-adc246c5-a6f2-441e-9451-148b07011a3a",
+    "text": "BUY NOW FREE MONEY CLICK HERE LIMITED OFFER SUBSCRIBE NOW!!!!",
+    "category": "Other",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "citizen_signature": "0xmockcitizensignature",
+    "government_ticket_signature": "0xmockgovernmentsignature"
+  },
+  "signed_object": {
+    "report_id": "RPT-AI-S03-adc246c5-a6f2-441e-9451-148b07011a3a",
+    "text_hash": "48048e5983c783ca79c0eb8f747da5902c0b09472494563ba7792ed5ac980a1d",
+    "media_hashes": [],
+    "category": "Other",
+    "location": "Matara",
+    "ticket_hash": "0xabc123ticket",
+    "payload_hash": "0xdef456payload",
+    "timestamp": "2026-05-10T11:05:06.875627+00:00",
+    "nonce": "ec854023-665d-4bab-8bc8-3ea436c8887f"
+  },
+  "file_summaries": [],
+  "response": {
+    "final_decision": "REJECT",
+    "final_confidence": 0.95,
+    "risk_level": "MEDIUM",
+    "report_hash": "13416d86b48a9f3150f9cca5e662621bc3fe4d82ba6bc28e2c063974d6bafa64",
+    "request_hash": "5564a352bdd33d39d8a9e6d13bc0919f8a843c99fd54572a8d6dfd370e183a72",
+    "decision_hash": "6c3b8f5a37486b581727e4553ecb9d07a9cba4724e8f8b8cc1431ed296e15ab7",
+    "aggregator_signature": "be3d9bf6ac5f2757bb560395ee7e954e1f86ff9d23c560c7f4b372c64599b5d16c49af2788e61549a495d5e4b2b78443747c78697d6d34ae2501ed6183d766811b",
+    "summary_explanation": "Report rejected because it does not appear to describe a valid civic issue.",
+    "oracle_votes": [
+      {
+        "oracle_id": "ORACLE_1_SAFETY",
+        "vote": "ACCEPT",
+        "confidence": 0.9976,
+        "explanation_code": "TEXT_AND_IMAGES_SAFE",
+        "model_name": "unitary/toxic-bert + Falconsai/nsfw_image_detection",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "text_result": {
+            "safe": true,
+            "confidence": 0.9976,
+            "critical_violation": false,
+            "explanation_code": "TEXT_SAFE",
+            "details": {
+              "scores": {
+                "toxic": 0.002380846068263054,
+                "obscene": 0.0002251484984299168,
+                "insult": 0.0002201717725256458,
+                "identity_hate": 0.00015552375407423824,
+                "threat": 0.00013078538177069277,
+                "severe_toxic": 9.07252833712846e-05
+              },
+              "mode": "unitary/toxic-bert"
+            }
+          },
+          "image_result": {
+            "safe": true,
+            "confidence": 1.0,
+            "critical_violation": false,
+            "explanation_code": "NO_IMAGE_PROVIDED",
+            "details": {
+              "images": []
+            }
+          }
+        }
+      },
+      {
+        "oracle_id": "ORACLE_2_SPAM_ABUSE",
+        "vote": "REJECT",
+        "confidence": 1.0,
+        "explanation_code": "SPAM_OR_LOW_QUALITY_DETECTED",
+        "model_name": "spam-abuse-rules-v1",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "word_count": 10,
+          "url_count": 0,
+          "matched_spam_phrases": [
+            "buy now",
+            "free money",
+            "click here",
+            "limited offer",
+            "subscribe now"
+          ],
+          "matched_promotional_words": [
+            "offer"
+          ],
+          "repeated_character_pattern": false,
+          "excessive_symbols": false,
+          "reasons": [
+            "SPAM_PHRASE_DETECTED",
+            "PROMOTIONAL_LANGUAGE_DETECTED"
+          ],
+          "spam_score": 1.0
+        }
+      },
+      {
+        "oracle_id": "ORACLE_3_CIVIC_RELEVANCE",
+        "vote": "REJECT",
+        "confidence": 0.9,
+        "explanation_code": "LOW_CIVIC_RELEVANCE",
+        "model_name": "civic-keyword-relevance-v1",
+        "model_version": "1.0.0",
+        "critical_violation": false,
+        "details": {
+          "text_relevance": {
+            "civic_relevant": false,
+            "confidence": 0.9,
+            "explanation_code": "LOW_CIVIC_RELEVANCE",
+            "details": {
+              "selected_category": "Other",
+              "category_matches": {},
+              "all_matches": []
+            }
+          },
+          "image_relevance": {
+            "image_relevance": "NO_IMAGE_PROVIDED",
+            "confidence": 1.0,
+            "details": []
+          }
+        }
+      }
+    ],
+    "security": {
+      "relayer_signature_verified": true,
+      "recovered_relayer_address": "0x8b3d8a21b794544759ea04b15f2bac1e61877a11",
+      "timestamp_validated": true,
+      "nonce_accepted": true
+    },
+    "processing_time_ms": 131.31
+  }
+}
