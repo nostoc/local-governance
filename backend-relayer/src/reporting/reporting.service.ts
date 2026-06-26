@@ -13,11 +13,13 @@ import { IpfsService } from '../ipfs/ipfs.service';
 
 export interface SubmitReportPayload {
   description: string;
+  category: string;
+  location: string;
   zkpTicketId: string;
   zkpSignature: string;
   citizenPubKey: string;
   signature: string;
-  imageHashes: string; 
+  imageHashes: string;
 }
 
 
@@ -32,7 +34,7 @@ export class ReportingService implements OnModuleInit {
     private readonly aiOracleService: AiOracleService,
     private readonly blockchainService: BlockchainService,
     private readonly ipfsService: IpfsService,
-  ) {}
+  ) { }
 
   async onModuleInit() {
     this.loadGovPublicKeyFromEnv();
@@ -52,9 +54,26 @@ export class ReportingService implements OnModuleInit {
   }
 
   async createReport(payload: SubmitReportPayload, images?: Express.Multer.File[]) {
-    const { description, zkpTicketId, zkpSignature, citizenPubKey, signature, imageHashes } = payload;
+    const {
+      description,
+      category,
+      location,
+      zkpTicketId,
+      zkpSignature,
+      citizenPubKey,
+      signature,
+      imageHashes,
+    } = payload;
 
-    if (!description || !zkpTicketId || !zkpSignature || !citizenPubKey || !signature) {
+    if (
+      !description ||
+      !category ||
+      !location ||
+      !zkpTicketId ||
+      !zkpSignature ||
+      !citizenPubKey ||
+      !signature
+    ) {
       throw new BadRequestException('Missing required fields in payload');
     }
 
@@ -66,8 +85,8 @@ export class ReportingService implements OnModuleInit {
       );
 
       if (recoveredGovAddress.toLowerCase() !== this.govPublicKey.toLowerCase()) {
-         this.logger.error(`Gov signature mismatch. Expected: ${this.govPublicKey}, Got: ${recoveredGovAddress}`);
-         throw new UnauthorizedException('Invalid or forged government ticket');
+        this.logger.error(`Gov signature mismatch. Expected: ${this.govPublicKey}, Got: ${recoveredGovAddress}`);
+        throw new UnauthorizedException('Invalid or forged government ticket');
       }
 
       // STEP 2: Parse and Verify Image Hashes
@@ -88,8 +107,8 @@ export class ReportingService implements OnModuleInit {
         for (let i = 0; i < images.length; i++) {
           const computedHash = ethers.keccak256(images[i].buffer);
           if (computedHash !== parsedImageHashes[i]) {
-             this.logger.error(`Image hash mismatch at index ${i}. Possible tampering.`);
-             throw new UnauthorizedException(`Image at index ${i} tampered in transit or hash mismatch.`);
+            this.logger.error(`Image hash mismatch at index ${i}. Possible tampering.`);
+            throw new UnauthorizedException(`Image at index ${i} tampered in transit or hash mismatch.`);
           }
         }
       }
@@ -107,14 +126,14 @@ export class ReportingService implements OnModuleInit {
       );
       const citizenPseudonym = ethers.keccak256(
         ethers.solidityPacked(
-            ['address', 'string'],
-            [citizenPubKey, process.env.PSEUDONYM_DOMAIN_SALT]   // e.g. "CivicReport-v1"
+          ['address', 'string'],
+          [citizenPubKey, process.env.PSEUDONYM_DOMAIN_SALT]   // e.g. "CivicReport-v1"
         )
       );
 
       if (recoveredCitizenAddress.toLowerCase() !== citizenPubKey.toLowerCase()) {
-         this.logger.error(`Citizen signature mismatch. Data tampered in transit.`);
-         throw new UnauthorizedException('Invalid citizen signature. Payload may be tampered.');
+        this.logger.error(`Citizen signature mismatch. Data tampered in transit.`);
+        throw new UnauthorizedException('Invalid citizen signature. Payload may be tampered.');
       }
 
       this.logger.log('✅ Cryptographic verification passed. Payload and images are secure.');
@@ -136,65 +155,59 @@ export class ReportingService implements OnModuleInit {
       }
       this.logger.log('✅ AI moderation passed: Content approved.');
 
-// STEP 5: Storage (IPFS) — Actual Implementation
+      // STEP 5: Storage (IPFS)
       this.logger.log('Initiating IPFS storage pipeline...');
-      let ipfsCID = 'ipfs://none';
+      const ipfsStoreResult = await this.ipfsService.uploadComplaint({
+        description,
+        category,
+        location,
+        images,
+      });
+      const ipfsCID = ipfsStoreResult.ipfsUri;
+      this.logger.log(`✅ Complaint successfully stored on IPFS. CID: ${ipfsStoreResult.cid}`);
 
-      if (images && images.length > 0) {
-        this.logger.log(`Uploading ${images.length} approved media file(s) to IPFS...`);
-        // Upload multiple images concurrently to minimize latency
-        const uploadPromises = images.map((img) => this.ipfsService.uploadImage(img));
-        const uploadedCIDs = await Promise.all(uploadPromises);
-        
-        // Join multiple CIDs with a comma (or adjust based on your smart contract schema)
-        ipfsCID = uploadedCIDs.join(',');
-        this.logger.log(`✅ Media successfully stored on IPFS. Final CID reference: ${ipfsCID}`);
-      } else {
-        this.logger.log('No media attached to report; proceeding with fallback CID reference.');
-      }
+      // STEP 6: Blockchain Submission
+      this.logger.log('Submitting report to blockchain...');
+      const chainResult = await this.blockchainService.submitReportToChain(
+        ipfsCID,
+        messageHash,       // this is the solidityPackedKeccak256 hash — already a bytes32 hex string
+        zkpTicketId,       // used as the submission nullifier
+        citizenPseudonym
+      );
 
-    // STEP 6: Blockchain Submission
-    this.logger.log('Submitting report to blockchain...');
-    const chainResult = await this.blockchainService.submitReportToChain(
-      ipfsCID,
-      messageHash,       // this is the solidityPackedKeccak256 hash — already a bytes32 hex string
-      zkpTicketId,       // used as the submission nullifier
-      citizenPseudonym
-    );
-
-    return {
-      success: true,
-      submissionStatus: 'confirmed_onchain',
-      zkpTicketId,
-      ipfsCID,
-      transactionHash: chainResult.transactionHash,
-      blockNumber: chainResult.blockNumber,
-    };
+      return {
+        success: true,
+        submissionStatus: 'confirmed_onchain',
+        zkpTicketId,
+        ipfsCID,
+        transactionHash: chainResult.transactionHash,
+        blockNumber: chainResult.blockNumber,
+      };
 
     } catch (error: any) {
       this.logger.error(`Submission pipeline failed: ${error.message}`);
-      if (error.status) throw error; 
+      if (error.status) throw error;
       throw new BadRequestException('Cryptographic verification, AI moderation, or blockchain submission failed');
     }
   }
 
   getPseudonym(citizenAddress: string): { pseudonym: string } {
     const salt = process.env.PSEUDONYM_DOMAIN_SALT;
- 
+
     if (!salt) {
       this.logger.error('PSEUDONYM_DOMAIN_SALT is not set in environment');
       throw new InternalServerErrorException('Pseudonym derivation is not configured');
     }
- 
+
     const pseudonym = ethers.keccak256(
       ethers.solidityPacked(
         ['address', 'string'],
         [citizenAddress, salt],
       ),
     );
- 
+
     this.logger.log(`Pseudonym derived for ${citizenAddress}: ${pseudonym}`);
- 
+
     return { pseudonym };
   }
 }

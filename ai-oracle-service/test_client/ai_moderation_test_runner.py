@@ -19,6 +19,8 @@ load_dotenv()
 AGGREGATOR_URL = os.getenv("AGGREGATOR_URL", "http://localhost:8000/moderate/report")
 ORACLE_API_KEY = os.getenv("ORACLE_API_KEY", "change-this-secret")
 RELAYER_PRIVATE_KEY = os.getenv("RELAYER_PRIVATE_KEY")
+MAX_FILE_SIZE_MB = int(os.getenv("MAX_FILE_SIZE_MB", "5"))
+MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 if not RELAYER_PRIVATE_KEY:
     raise ValueError("RELAYER_PRIVATE_KEY is missing in .env")
@@ -120,6 +122,48 @@ def read_files(image_paths: Optional[List[str]]) -> Tuple[List[Tuple], List[str]
     return files, media_hashes, file_summaries
 
 
+def read_raw_files(raw_files: Optional[List[Dict[str, Any]]]) -> Tuple[List[Tuple], List[str], List[Dict[str, Any]]]:
+    files = []
+    media_hashes = []
+    file_summaries = []
+
+    if not raw_files:
+        return files, media_hashes, file_summaries
+
+    for raw_file in raw_files:
+        name = raw_file.get("name", "file.bin")
+        content = raw_file.get("content", b"")
+        mime_type = raw_file.get("mime_type", "application/octet-stream")
+
+        if not isinstance(content, (bytes, bytearray)):
+            raise ValueError(f"Raw file content must be bytes for {name}")
+
+        file_hash = sha256_bytes(bytes(content))
+        media_hashes.append(file_hash)
+
+        files.append(
+            (
+                "files",
+                (
+                    name,
+                    bytes(content),
+                    mime_type,
+                ),
+            )
+        )
+
+        file_summaries.append(
+            {
+                "file_name": name,
+                "mime_type": mime_type,
+                "size_bytes": len(content),
+                "sha256": file_hash,
+            }
+        )
+
+    return files, media_hashes, file_summaries
+
+
 def build_metadata(test_case: Dict[str, Any]) -> Dict[str, Any]:
     return {
         "report_id": test_case.get("report_id", f"RPT-{test_case['id']}-{uuid.uuid4()}"),
@@ -158,14 +202,30 @@ def send_request(
     test_case: Dict[str, Any],
     override_api_key: Optional[str] = None,
     remove_api_key: bool = False,
+    remove_relayer_signature: bool = False,
+    remove_timestamp: bool = False,
+    remove_nonce: bool = False,
     invalid_signature: bool = False,
     fixed_timestamp: Optional[str] = None,
     fixed_nonce: Optional[str] = None,
 ) -> Dict[str, Any]:
     metadata = build_metadata(test_case)
+    metadata_overrides = test_case.get("metadata_overrides", {})
+    metadata_remove = test_case.get("metadata_remove", [])
+
+    if metadata_overrides:
+        metadata.update(metadata_overrides)
+
+    for key in metadata_remove:
+        metadata.pop(key, None)
 
     image_paths = test_case.get("image_paths", [])
+    raw_files = test_case.get("raw_files", [])
     files, media_hashes, file_summaries = read_files(image_paths)
+    raw_files_data = read_raw_files(raw_files)
+    files.extend(raw_files_data[0])
+    media_hashes.extend(raw_files_data[1])
+    file_summaries.extend(raw_files_data[2])
 
     timestamp = fixed_timestamp or datetime.now(timezone.utc).isoformat()
     nonce = fixed_nonce or str(uuid.uuid4())
@@ -184,17 +244,29 @@ def send_request(
     else:
         signature = sign_hash(request_hash, RELAYER_PRIVATE_KEY)
 
-    headers = {
-        "x-relayer-signature": signature,
-        "x-request-timestamp": timestamp,
-        "x-request-nonce": nonce,
-    }
+    headers = {}
+
+    if not remove_relayer_signature:
+        headers["x-relayer-signature"] = signature
+
+    if not remove_timestamp:
+        headers["x-request-timestamp"] = timestamp
+
+    if not remove_nonce:
+        headers["x-request-nonce"] = nonce
 
     if not remove_api_key:
         headers["x-api-key"] = override_api_key if override_api_key is not None else ORACLE_API_KEY
 
+    raw_metadata = test_case.get("raw_metadata")
+
+    if raw_metadata is not None:
+        metadata_payload = raw_metadata
+    else:
+        metadata_payload = json.dumps(metadata)
+
     data = {
-        "metadata": json.dumps(metadata)
+        "metadata": metadata_payload,
     }
 
     started_at = time.time()
@@ -544,6 +616,185 @@ def run_security_tests() -> List[Dict[str, Any]]:
     return results
 
 
+def run_validation_tests() -> List[Dict[str, Any]]:
+    results = []
+
+    base_case = {
+        "id": "AI-VAL-BASE",
+        "name": "Base valid report for validation tests",
+        "text": "There is a pothole near the public school road.",
+        "category": "Road Damage",
+        "expected_decision": "ACCEPT",
+    }
+
+    print("\nRunning AI-VAL-01 - Missing relayer signature")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-01",
+        "name": "Missing relayer signature",
+        "expected_http_status": 401,
+        "expected_decision": None,
+    }
+    result = send_request(test_case, remove_relayer_signature=True)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-02 - Missing request timestamp")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-02",
+        "name": "Missing request timestamp",
+        "expected_http_status": 401,
+        "expected_decision": None,
+    }
+    result = send_request(test_case, remove_timestamp=True)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-03 - Missing request nonce")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-03",
+        "name": "Missing request nonce",
+        "expected_http_status": 401,
+        "expected_decision": None,
+    }
+    result = send_request(test_case, remove_nonce=True)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-04 - Invalid timestamp format")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-04",
+        "name": "Invalid timestamp format",
+        "expected_http_status": 400,
+        "expected_decision": None,
+    }
+    result = send_request(test_case, fixed_timestamp="not-a-timestamp")
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-05 - Future timestamp beyond max age")
+    future_timestamp = (datetime.now(timezone.utc) + timedelta(minutes=20)).isoformat()
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-05",
+        "name": "Future timestamp beyond max age",
+        "expected_http_status": 401,
+        "expected_decision": None,
+    }
+    result = send_request(test_case, fixed_timestamp=future_timestamp)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-06 - Invalid metadata JSON")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-06",
+        "name": "Invalid metadata JSON",
+        "expected_http_status": 400,
+        "expected_decision": None,
+        "raw_metadata": "{not-valid-json}",
+    }
+    result = send_request(test_case)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-07 - Missing report_id")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-07",
+        "name": "Missing report_id",
+        "expected_http_status": 400,
+        "expected_decision": None,
+        "metadata_remove": ["report_id"],
+    }
+    result = send_request(test_case)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-08 - Missing payload_hash")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-08",
+        "name": "Missing payload_hash",
+        "expected_http_status": 400,
+        "expected_decision": None,
+        "metadata_remove": ["payload_hash"],
+    }
+    result = send_request(test_case)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-09 - Whitespace-only text")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-09",
+        "name": "Whitespace-only text",
+        "expected_http_status": 400,
+        "expected_decision": None,
+        "metadata_overrides": {"text": "   "},
+    }
+    result = send_request(test_case)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-10 - Too many files")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-10",
+        "name": "Too many files",
+        "expected_http_status": 400,
+        "expected_decision": None,
+        "raw_files": [
+            {"name": "one.png", "content": b"a", "mime_type": "image/png"},
+            {"name": "two.png", "content": b"b", "mime_type": "image/png"},
+            {"name": "three.png", "content": b"c", "mime_type": "image/png"},
+            {"name": "four.png", "content": b"d", "mime_type": "image/png"},
+        ],
+    }
+    result = send_request(test_case)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-11 - Unsupported file MIME type")
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-11",
+        "name": "Unsupported file MIME type",
+        "expected_http_status": 400,
+        "expected_decision": None,
+        "raw_files": [
+            {"name": "note.txt", "content": b"text", "mime_type": "text/plain"}
+        ],
+    }
+    result = send_request(test_case)
+    results.append(result)
+    save_json_result(result)
+
+    print("\nRunning AI-VAL-12 - Oversized file")
+    oversized_content = b"x" * (MAX_FILE_SIZE_BYTES + 1)
+    test_case = {
+        **base_case,
+        "id": "AI-VAL-12",
+        "name": "Oversized file",
+        "expected_http_status": 400,
+        "expected_decision": None,
+        "raw_files": [
+            {"name": "large.png", "content": oversized_content, "mime_type": "image/png"}
+        ],
+    }
+    result = send_request(test_case)
+    results.append(result)
+    save_json_result(result)
+
+    for result in results:
+        print(f"{result['test_id']} -> HTTP {result['actual_http_status']} -> {'PASSED' if result['passed'] else 'FAILED'}")
+
+    return results
+
+
 def main():
     print("AI Moderation Automated Test Runner")
     print("-----------------------------------")
@@ -554,6 +805,7 @@ def main():
 
     all_results.extend(run_standard_tests())
     all_results.extend(run_security_tests())
+    all_results.extend(run_validation_tests())
 
     write_summary(all_results)
 

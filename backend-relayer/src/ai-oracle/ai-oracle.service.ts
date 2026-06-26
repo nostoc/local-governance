@@ -91,10 +91,10 @@ export class AiOracleService {
 
     const relayerSignature = await wallet.signMessage(requestHash);
 
-    this.logger.log(`Relayer wallet address: ${wallet.address}`);
-    this.logger.log(`Canonical string: ${canonicalString}`);
-    this.logger.log(`Request hash: ${requestHash}`);
-    this.logger.log(`Relayer signature: ${relayerSignature}`);
+    // this.logger.log(`Relayer wallet address: ${wallet.address}`);
+    // this.logger.log(`Canonical string: ${canonicalString}`);
+    // this.logger.log(`Request hash: ${requestHash}`);
+    // this.logger.log(`Relayer signature: ${relayerSignature}`);
 
     const metadata = {
       report_id: reportId,
@@ -116,7 +116,7 @@ export class AiOracleService {
       })),
     };
 
-    this.logger.log(`AI Oracle request body preview: ${JSON.stringify(requestBodyPreview, null, 2)}`);
+    //this.logger.log(`AI Oracle request body preview: ${JSON.stringify(requestBodyPreview, null, 2)}`);
 
     // 3. FIX: Cast to 'any' to bypass TS DOM complaining, relying on Node 18+ globals
     const formData = new (globalThis as any).FormData();

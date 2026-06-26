@@ -46,7 +46,8 @@ export default defineConfig({
       url: "https://rpc.internalbuildtools.online",
       chainId: 1337,
       accounts: [configVariable("DEPLOYER_PRIVATE_KEY")], 
-      gasPrice: 0,
+      gasPrice: 1000000000,
+      timeout:120000
     },
-  },
+  }
 });

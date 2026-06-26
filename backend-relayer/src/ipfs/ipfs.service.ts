@@ -1,58 +1,71 @@
 import { Injectable, Logger, HttpException, HttpStatus } from '@nestjs/common';
 import FormData from 'form-data';
 import axios from 'axios';
-import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class IpfsService {
   private readonly logger = new Logger(IpfsService.name);
 
-  
-  // Ideally, load this from process.env.IPFS_UPLOAD_ENDPOINT
-  private readonly ipfsEndpoint = 'https://ipfs.internalbuildtools.online/api/ipfs/store';
+  private readonly ipfsBaseUrl =
+    process.env.IPFS_UPLOAD_ENDPOINT || 'http://51.210.111.188:4000';
+  private readonly complaintStoreEndpoint =
+    process.env.IPFS_COMPLAINT_STORE_ENDPOINT ||
+    `${this.ipfsBaseUrl}/api/ipfs/complaint/store`;
 
-  /**
-   * Uploads an image buffer to the external IPFS node via multipart/form-data POST.
-   */
-  async uploadImage(file: Express.Multer.File): Promise<string> {
+  async uploadComplaint(payload: {
+    description: string;
+    category: string;
+    location: string;
+    images?: Express.Multer.File[];
+  }): Promise<{ cid: string; ipfsUri: string; raw: any }> {
     try {
       const formData = new FormData();
-      
-      // When attaching buffers in Node, you MUST specify the filename and content type,
-      // otherwise the receiving server may fail to parse the multipart request.
-      formData.append('image', file.buffer, {
-        filename: file.originalname || 'upload.jpg',
-        contentType: file.mimetype || 'image/webp',
-      });
+      formData.append('description', payload.description);
+      formData.append('category', payload.category);
+      formData.append('location', payload.location);
 
-      this.logger.log(`Uploading ${file.originalname || 'image'} to IPFS node...`);
+      if (payload.images?.length) {
+        for (const image of payload.images) {
+          formData.append('images', image.buffer, {
+            filename: image.originalname || 'upload.jpg',
+            contentType: image.mimetype || 'image/webp',
+          });
+        }
+      }
 
-      const response = await axios.post(this.ipfsEndpoint, formData, {
+      this.logger.log('Uploading complaint bundle to IPFS node...');
+
+      const response = await axios.post(this.complaintStoreEndpoint, formData, {
         headers: {
           ...formData.getHeaders(),
         },
-        // Optional: Add a timeout so slow IPFS nodes don't hang your pipeline
-        timeout: 30000, 
+        timeout: 30000,
       });
 
-      // Map the CID based on what your API returns. 
-      // Adjust response.data.cid to .hash or .url depending on the exact JSON schema of your endpoint.
       const cid = response.data?.cid || response.data?.hash || response.data?.url;
 
       if (!cid) {
-        this.logger.warn(`Upload succeeded but couldn't extract CID. Full response: ${JSON.stringify(response.data)}`);
-        // Fallback: return the raw string response if it's not a JSON object
-        return typeof response.data === 'string' ? response.data : JSON.stringify(response.data);
+        this.logger.warn(
+          `Upload succeeded but couldn't extract CID. Full response: ${JSON.stringify(
+            response.data,
+          )}`,
+        );
+        throw new HttpException(
+          'IPFS store did not return a CID',
+          HttpStatus.BAD_GATEWAY,
+        );
       }
 
-      this.logger.log(`✅ Successfully uploaded to IPFS: ${cid}`);
-      
-      // Ensure standard IPFS URI formatting
-      return cid.startsWith('ipfs://') ? cid : `ipfs://${cid}`;
+      const ipfsUri = cid.startsWith('ipfs://') ? cid : `ipfs://${cid}`;
+      this.logger.log(`✅ Complaint stored on IPFS: ${cid}`);
+
+      return { cid, ipfsUri, raw: response.data };
     } catch (error: any) {
-      this.logger.error(`IPFS upload failed: ${error?.response?.data || error.message}`);
+      this.logger.error(
+        `IPFS complaint upload failed: ${error?.response?.data || error.message}`,
+      );
       throw new HttpException(
-        'Failed to store image on IPFS network',
+        'Failed to store complaint on IPFS network',
         HttpStatus.BAD_GATEWAY,
       );
     }
