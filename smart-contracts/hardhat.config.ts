@@ -9,13 +9,13 @@ export default defineConfig({
       default: {
         version: "0.8.28",
         settings: {
-          evmVersion: "london", // Instructs compiler to avoid PUSH0
+          evmVersion: "cancun",
         },
       },
       production: {
         version: "0.8.28",
         settings: {
-          evmVersion: "london", // Instructs compiler to avoid PUSH0
+          evmVersion: "cancun", // FIX: Updated from "london" to "cancun" for OpenZeppelin v5 compatibility
           optimizer: {
             enabled: true,
             runs: 200,
@@ -26,7 +26,7 @@ export default defineConfig({
     },
   },
   networks: {
-    hardhatMainnet: {
+   hardhatMainnet: {
       type: "edr-simulated",
       chainType: "l1",
     },
@@ -41,13 +41,13 @@ export default defineConfig({
       accounts: [configVariable("SEPOLIA_PRIVATE_KEY")],
     },
     gethPrivate: {
-      type: "http", 
-      chainType: "l1", 
+      type: "http",
+      chainType: "l1",
       url: "https://rpc.internalbuildtools.online",
       chainId: 1337,
-      accounts: [configVariable("DEPLOYER_PRIVATE_KEY")], 
+      accounts: [configVariable("DEPLOYER_PRIVATE_KEY")],
       gasPrice: 1000000000,
-      timeout:120000
+      timeout: 120000
     },
   }
 });

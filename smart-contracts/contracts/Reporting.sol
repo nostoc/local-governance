@@ -64,6 +64,7 @@ contract Reporting is Ownable, ReentrancyGuard {
 
     mapping(address => bool) public authorizedRelayers;
     mapping(address => bool) public authorizedAuthorities;
+    address[] public authoritiesList;
 
     // ─── Custom Errors ────────────────────────────────────────────────────────
 
@@ -113,7 +114,9 @@ contract Reporting is Ownable, ReentrancyGuard {
         authorizedRelayers[0x3253678aF33758255f6d97069d9102597AFFf92c] = true;
 
         // Hardcoded authority
-        authorizedAuthorities[0xEE8670A4d50cdcf0afE7C99bF9a45976BaF576c2] = true;
+        address initialAuthority = 0xEE8670A4d50cdcf0afE7C99bF9a45976BaF576c2;
+        authorizedAuthorities[initialAuthority] = true;
+        authoritiesList.push(initialAuthority);
     }
 
     // ─── Admin Functions ──────────────────────────────────────────────────────
@@ -123,7 +126,24 @@ contract Reporting is Ownable, ReentrancyGuard {
     }
 
     function setAuthority(address authority, bool authorized) external onlyOwner {
-        authorizedAuthorities[authority] = authorized;
+        if (authorized && !authorizedAuthorities[authority]) {
+            authorizedAuthorities[authority] = true;
+            authoritiesList.push(authority);
+        } else if (!authorized && authorizedAuthorities[authority]) {
+            authorizedAuthorities[authority] = false;
+            // Remove from array
+            for (uint256 i = 0; i < authoritiesList.length; i++) {
+                if (authoritiesList[i] == authority) {
+                    authoritiesList[i] = authoritiesList[authoritiesList.length - 1];
+                    authoritiesList.pop();
+                    break;
+                }
+            }
+        }
+    }
+
+    function getAuthorities() external view returns (address[] memory) {
+        return authoritiesList;
     }
 
     function setVotingWindowDuration(uint256 duration) external onlyOwner {
